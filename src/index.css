@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Admin Dashboard Design System - Modern, Professional Theme */
+
+@layer base {
+  :root {
+    /* Core backgrounds */
+    --background: 0 0% 100%;
+    --foreground: 212 9% 15%;
+    
+    /* Sidebar theme */
+    --sidebar-bg: 214 13% 7%;
+    --sidebar-foreground: 212 4% 85%;
+    --sidebar-accent: 178 70% 40%;
+    --sidebar-hover: 214 20% 12%;
+    
+    /* Card system */
+    --card: 0 0% 100%;
+    --card-foreground: 212 9% 15%;
+    --card-border: 214 17% 92%;
+    
+    /* Interactive elements */
+    --primary: 178 70% 40%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 178 70% 35%;
+    
+    /* Status colors */
+    --success: 142 69% 40%;
+    --success-foreground: 0 0% 100%;
+    --warning: 35 100% 55%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Neutral system */
+    --secondary: 212 8% 96%;
+    --secondary-foreground: 212 9% 25%;
+    --muted: 212 8% 96%;
+    --muted-foreground: 212 6% 45%;
+    --accent: 212 8% 96%;
+    --accent-foreground: 212 9% 25%;
+    
+    /* Form elements */
+    --border: 214 17% 92%;
+    --input: 214 17% 92%;
+    --ring: 178 70% 40%;
+    
+    /* Layout */
+    --radius: 0.75rem;
+    --shadow-sm: 0 1px 2px 0 hsl(212 9% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(212 9% 15% / 0.1);
+    --shadow-lg: 0 10px 15px -3px hsl(212 9% 15% / 0.1);
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(178 70% 40%), hsl(178 70% 50%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(212 8% 98%));
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  /* Dark mode support */
+  .dark {
+    --background: 214 13% 7%;
+    --foreground: 212 4% 85%;
+    --card: 214 20% 12%;
+    --card-foreground: 212 4% 85%;
+    --primary: 178 70% 45%;
+    --primary-hover: 178 70% 50%;
+    --sidebar-bg: 214 18% 5%;
+    --sidebar-hover: 214 25% 15%;
+    --border: 214 25% 15%;
+    --input: 214 25% 15%;
+    --muted: 214 25% 15%;
+    --muted-foreground: 212 4% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-medium;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--muted));
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3);
+    border-radius: 3px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5);
+  }
+}
