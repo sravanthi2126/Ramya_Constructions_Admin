@@ -1,20 +1,57 @@
-import { useState } from 'react';
-import { Eye, MapPin, IndianRupee } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Eye, MapPin, IndianRupee, Trash } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { ProjectDetailsModal } from '@/components/Projects/ProjectDetailsModal';
 import { AddProjectDialog } from '@/components/Projects/AddProjectDialog';
-import { mockProjects } from '@/data/mockData';
+import { projectApi } from '@/api/apiService.ts'; // Assume apiService is in services folder or adjust path
 import { Project } from '@/types/admin';
 
 export default function Projects() {
+  const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProjects = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await projectApi.getAllProjects(1, 100); // Fetch up to 100 projects; adjust limit as needed
+      setProjects(res.projects);
+    } catch (err) {
+      setError('Failed to fetch projects. Please try again.');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
   const handleViewProject = (project: Project) => {
     setSelectedProject(project);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+    try {
+      await projectApi.deleteProject(projectId);
+      fetchProjects(); // Refetch after delete
+    } catch (err) {
+      setError('Failed to delete project. Please try again.');
+      console.error(err);
+    }
+  };
+
+  // Assuming AddProjectDialog supports onSuccess callback for refetch
+  const handleProjectAdded = () => {
+    fetchProjects();
   };
 
   const getStatusColor = (status: string) => {
@@ -36,6 +73,14 @@ export default function Projects() {
     return `₹${price.toLocaleString()}`;
   };
 
+  if (isLoading) {
+    return <div>Loading projects...</div>;
+  }
+
+  if (error) {
+    return <div className="text-destructive">{error}</div>;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -51,15 +96,15 @@ export default function Projects() {
         <div>
           <h2 className="text-lg font-semibold">All Projects</h2>
           <p className="text-sm text-muted-foreground">
-            {mockProjects.length} total projects
+            {projects.length} total projects
           </p>
         </div>
-        <AddProjectDialog />
+        <AddProjectDialog onSuccess={handleProjectAdded} /> {/* Assume onSuccess prop for refetch */}
       </div>
 
       {/* Projects Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {mockProjects.map((project) => (
+        {projects.map((project) => (
           <Card key={project.id} className="p-6 hover:shadow-lg transition-shadow">
             <div className="space-y-4">
               <div className="flex items-start justify-between">
@@ -106,7 +151,7 @@ export default function Projects() {
                 )}
               </div>
 
-              <div className="pt-4 border-t">
+              <div className="pt-4 border-t space-y-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -115,6 +160,24 @@ export default function Projects() {
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   View Details
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleViewProject(project)} // Assume edit uses same modal; update to edit mode if needed
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  Edit Details
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => handleDeleteProject(project.id)}
+                >
+                  <Trash className="w-4 h-4 mr-2" />
+                  Delete
                 </Button>
               </div>
             </div>

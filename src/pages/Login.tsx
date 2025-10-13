@@ -8,8 +8,8 @@ import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Login() {
-  const [email, setEmail] = useState('admin@example.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -18,24 +18,52 @@ export default function Login() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Mock authentication
-    setTimeout(() => {
-      if (email === 'admin@example.com' && password === 'admin123') {
-        localStorage.setItem('admin_token', 'mock_token');
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/admins/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        // Store the access token and user data
+        localStorage.setItem('admin_token', data.data.access_token);
+        localStorage.setItem('admin_user', JSON.stringify({
+          id: data.data.id,
+          name: data.data.name,
+          email: data.data.email,
+        }));
+
         toast({
           title: 'Login successful',
-          description: 'Welcome to the admin dashboard!',
+          description: `Welcome ${data.data.name}!`,
         });
-        navigate('/');
+        
+        navigate('/admin-management'); // Adjust to your route
       } else {
         toast({
           title: 'Login failed',
-          description: 'Invalid credentials. Please try again.',
+          description: data.detail || 'Invalid credentials. Please try again.',
           variant: 'destructive',
         });
       }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        title: 'Login failed',
+        description: 'Network error. Please check your connection and try again.',
+        variant: 'destructive',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -50,13 +78,6 @@ export default function Login() {
           <p className="text-muted-foreground">
             Sign in to access the admin dashboard
           </p>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="p-3 bg-muted rounded-lg">
-          <p className="text-xs font-medium text-muted-foreground mb-1">Demo Credentials:</p>
-          <p className="text-xs text-muted-foreground">Email: admin@example.com</p>
-          <p className="text-xs text-muted-foreground">Password: admin123</p>
         </div>
 
         {/* Login Form */}
