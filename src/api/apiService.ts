@@ -204,10 +204,9 @@ export const adminApi = {
 };
 
 // -------------------------------------------------------------------------------
-// New Scheme-related code below
-// ----------------------------------------------------------------
+// Scheme-related code
+// -------------------------------------------------------------------------------
 
-// Scheme Interfaces
 export interface Scheme {
   id: string;
   project_id: string;
@@ -371,7 +370,7 @@ export const schemeApi = {
     }
   },
 
-  // Delete Scheme (Port 8000) - Assuming this exists; add if needed
+  // Delete Scheme (Port 8000)
   async deleteScheme(schemeId: string): Promise<ApiResponse> {
     try {
       const response = await fetch(`${SCHEME_API_BASE_URL_WRITE}/${schemeId}`, {
@@ -391,9 +390,10 @@ export const schemeApi = {
 // -------------------------------------------------------------------------------
 
 export interface PricingDetails {
-  rent_per_sqft: number;
-  sale_price_per_sqft: number;
-  maintenance_per_sqft: number;
+  rent_per_sqft?: number;
+  sale_price_per_sqft?: number;
+  maintenance_per_sqft?: number;
+  sqft?: number;
 }
 
 export interface GalleryImage {
@@ -410,6 +410,14 @@ export interface Amenity {
   icon: string;
 }
 
+export interface QuickInfo {
+  possession_date?: string;
+  construction_status?: string;
+  floors_available?: string[];
+  rera_number?: string;
+  building_permission?: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -417,17 +425,17 @@ export interface Project {
   description: string;
   long_description: string;
   website_url: string;
-  status: string;
+  status: 'available' | 'sold_out' | 'coming_soon';
   base_price: number;
-  property_type: string;
+  property_type: 'commercial' | 'residential' | 'plot' | 'land' | 'mixed_use';
   has_rental_income: boolean;
-  pricing_details: PricingDetails;
-  quick_info: Record<string, any> | null;
-  gallery_images: GalleryImage[];
-  key_highlights: string[];
-  features: string[];
-  investment_highlights: string[];
-  amenities: Amenity[];
+  pricing_details: PricingDetails | null;
+  quick_info: QuickInfo | null;
+  gallery_images: GalleryImage[] | null;
+  key_highlights: string[] | null;
+  features: string[] | null;
+  investment_highlights: string[] | null;
+  amenities: Amenity[] | null;
   total_units: number;
   available_units: number;
   sold_units: number;
@@ -436,34 +444,102 @@ export interface Project {
   building_permission: string;
   created_at: string;
   updated_at: string;
+  is_active: boolean;
+}
+
+export interface CreateProjectRequest {
+  title: string;
+  location: string;
+  description: string;
+  long_description: string;
+  website_url: string;
+  status: 'available' | 'sold_out' | 'coming_soon';
+  base_price: number;
+  property_type: 'commercial' | 'residential' | 'plot' | 'land' | 'mixed_use';
+  has_rental_income: boolean;
+  pricing_details?: PricingDetails;
+  quick_info?: QuickInfo;
+  gallery_images?: GalleryImage[];
+  key_highlights?: string[];
+  features?: string[];
+  investment_highlights?: string[];
+  amenities?: Amenity[];
+  total_units: number;
+  available_units: number;
+  sold_units: number;
+  reserved_units: number;
+  rera_number: string;
+  building_permission: string;
+}
+
+export interface ProjectResponse {
+  message: string;
+  data?: Project;
 }
 
 export interface ProjectListResponse {
   message: string;
-  total_projects: number;
-  projects: Project[];
   page: number;
   limit: number;
   total_pages: number;
   is_previous: boolean;
   is_next: boolean;
+  total_projects: number;
+  projects: Project[];
 }
 
-export type CreateProjectRequest = Omit<Project, 'id' | 'created_at' | 'updated_at' | 'sold_units' | 'reserved_units'>;
-
-export type UpdateProjectRequest = Partial<CreateProjectRequest>;
+export interface UpdateProjectRequest {
+  title?: string;
+  location?: string;
+  description?: string;
+  long_description?: string;
+  website_url?: string;
+  status?: 'available' | 'sold_out' | 'coming_soon';
+  base_price?: number;
+  property_type?: 'commercial' | 'residential' | 'plot' | 'land' | 'mixed_use';
+  has_rental_income?: boolean;
+  pricing_details?: PricingDetails;
+  quick_info?: QuickInfo;
+  gallery_images?: GalleryImage[];
+  key_highlights?: string[];
+  features?: string[];
+  investment_highlights?: string[];
+  amenities?: Amenity[];
+  total_units?: number;
+  available_units?: number;
+  sold_units?: number;
+  reserved_units?: number;
+  rera_number?: string;
+  building_permission?: string;
+  is_active?: boolean;
+}
 
 const PROJECT_API_BASE_URL_READ = 'http://127.0.0.1:8001/api/projects';
 const PROJECT_API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/projects';
 
 export const projectApi = {
+  // Get All Projects (Port 8001)
   async getAllProjects(
     page: number = 1,
-    limit: number = 100 // Higher limit to fetch all for select
+    limit: number = 100,
+    property_type?: string,
+    status_filter?: string,
+    min_price?: number,
+    max_price?: number
   ): Promise<ProjectListResponse> {
     try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      
+      if (property_type) params.append('property_type', property_type);
+      if (status_filter) params.append('status_filter', status_filter);
+      if (min_price) params.append('min_price', min_price.toString());
+      if (max_price) params.append('max_price', max_price.toString());
+
       const response = await fetch(
-        `${PROJECT_API_BASE_URL_READ}/all?page=${page}&limit=${limit}`,
+        `${PROJECT_API_BASE_URL_READ}/all?${params.toString()}`,
         {
           method: 'GET',
           headers: getAuthHeader(),
@@ -477,14 +553,14 @@ export const projectApi = {
   },
 
   // Get Project by ID (Port 8001)
-  async getProjectById(projectId: string): Promise<ApiResponse<Project>> {
+  async getProjectById(projectId: string): Promise<ProjectResponse> {
     try {
       const response = await fetch(`${PROJECT_API_BASE_URL_READ}/${projectId}`, {
         method: 'GET',
         headers: getAuthHeader(),
       });
 
-      return handleResponse<ApiResponse<Project>>(response);
+      return handleResponse<ProjectResponse>(response);
     } catch (error) {
       return handleNetworkError(error);
     }
@@ -515,10 +591,14 @@ export const projectApi = {
   async getProjectsByStatus(
     status: string,
     page: number = 1,
-    limit: number = 5
+    limit: number = 20
   ): Promise<ProjectListResponse> {
     try {
-      const params = new URLSearchParams({ status, page: page.toString(), limit: limit.toString() });
+      const params = new URLSearchParams({ 
+        status, 
+        page: page.toString(), 
+        limit: limit.toString() 
+      });
       const response = await fetch(`${PROJECT_API_BASE_URL_READ}/by-status?${params.toString()}`, {
         method: 'GET',
         headers: getAuthHeader(),
@@ -534,10 +614,14 @@ export const projectApi = {
   async searchProjects(
     searchTerm: string,
     page: number = 1,
-    limit: number = 5
+    limit: number = 20
   ): Promise<ProjectListResponse> {
     try {
-      const params = new URLSearchParams({ search_term: searchTerm, page: page.toString(), limit: limit.toString() });
+      const params = new URLSearchParams({ 
+        search_term: searchTerm, 
+        page: page.toString(), 
+        limit: limit.toString() 
+      });
       const response = await fetch(`${PROJECT_API_BASE_URL_READ}/search?${params.toString()}`, {
         method: 'GET',
         headers: getAuthHeader(),
@@ -549,39 +633,31 @@ export const projectApi = {
     }
   },
 
-  // Get Project List for Dropdown (Port 8001) - Assumes /list endpoint fetches minimal data
-  async getProjectList(
-    page: number = 1,
-    limit: number = 20
-  ): Promise<ProjectListResponse> {
-    try {
-      const response = await fetch(
-        `${PROJECT_API_BASE_URL_READ}/list?page=${page}&limit=${limit}`,
-        {
-          method: 'GET',
-          headers: getAuthHeader(),
-        }
-      );
-
-      return handleResponse<ProjectListResponse>(response);
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-
   // Create Project (Port 8000)
-  async createProject(data: CreateProjectRequest): Promise<ApiResponse> {
+  async createProject(data: CreateProjectRequest, images?: File[]): Promise<ProjectResponse> {
     try {
+      const formData = new FormData();
+      
+      // Add project data as JSON string
+      formData.append('project', JSON.stringify(data));
+      
+      // Add images if provided
+      if (images) {
+        images.forEach(file => {
+          formData.append('images', file);
+        });
+      }
+
       const response = await fetch(`${PROJECT_API_BASE_URL_WRITE}/create`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           ...getAuthHeader(),
+          // Don't set Content-Type for FormData - browser will set it with boundary
         },
-        body: JSON.stringify(data),
+        body: formData,
       });
 
-      return handleResponse<ApiResponse>(response);
+      return handleResponse<ProjectResponse>(response);
     } catch (error) {
       return handleNetworkError(error);
     }
@@ -590,33 +666,40 @@ export const projectApi = {
   // Update Project (Port 8000)
   async updateProject(
     projectId: string,
-    data: UpdateProjectRequest
-  ): Promise<ApiResponse> {
+    data: UpdateProjectRequest,
+    images?: File[]
+  ): Promise<ProjectResponse> {
     try {
+      const formData = new FormData();
+      formData.append('request', JSON.stringify(data));
+      
+      if (images) {
+        images.forEach(file => {
+          formData.append('images', file);
+        });
+      }
+
       const response = await fetch(`${PROJECT_API_BASE_URL_WRITE}/${projectId}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify(data),
+        headers: getAuthHeader(),
+        body: formData,
       });
 
-      return handleResponse<ApiResponse>(response);
+      return handleResponse<ProjectResponse>(response);
     } catch (error) {
       return handleNetworkError(error);
     }
   },
 
   // Delete Project (Port 8000)
-  async deleteProject(projectId: string): Promise<ApiResponse> {
+  async deleteProject(projectId: string): Promise<ProjectResponse> {
     try {
       const response = await fetch(`${PROJECT_API_BASE_URL_WRITE}/${projectId}`, {
         method: 'DELETE',
         headers: getAuthHeader(),
       });
 
-      return handleResponse<ApiResponse>(response);
+      return handleResponse<ProjectResponse>(response);
     } catch (error) {
       return handleNetworkError(error);
     }
