@@ -29,7 +29,29 @@ export interface UserProfile {
   updated_at: string;
 }
 
+// export interface Project {
+//   [x: string]: string;
+//   [x: string]: number;
+//   [x: string]: boolean;
+//   long_description: string;
+//   id: string;
+//   title: string;
+//   location: string;
+//   description?: string;
+//   status: 'available' | 'sold_out' | 'coming_soon';
+//   base_price: number;
+//   property_type: 'commercial' | 'residential' | 'plot' | 'land' | 'mixed_use';
+//   total_units: number;
+//   available_units: number;
+//   sold_units: number;
+//   rera_number?: string;
+//   created_at: string;
+//   is_active: boolean;
+// }
+
 export interface Project {
+  [key: string]: string | number | boolean | Project | undefined; // include types you need
+  long_description: string;
   id: string;
   title: string;
   location: string;
@@ -44,6 +66,7 @@ export interface Project {
   created_at: string;
   is_active: boolean;
 }
+
 
 export interface InvestmentScheme {
   id: string;

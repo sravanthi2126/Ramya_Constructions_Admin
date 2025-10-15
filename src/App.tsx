@@ -11,6 +11,7 @@ import UserManagement from "./pages/UserManagement";
 import AdminManagement from "./pages/AdminManagement";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+import Agents from "./pages/Agents";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="schemes" element={<Schemes />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="admin" element={<AdminManagement />} />
+            <Route path="agents" element={<Agents />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

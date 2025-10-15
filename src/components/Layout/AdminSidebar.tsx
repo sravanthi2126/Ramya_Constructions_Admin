@@ -8,7 +8,8 @@ import {
   LogOut,
   Menu,
   ChevronLeft,
-  UserCircle 
+  UserCircle,
+  Mail // ✅ Added Mail icon for Contact Inquiry
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -21,8 +22,9 @@ interface SidebarProps {
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'Schemes', href: '/schemes', icon: TrendingUp },
-   { name: 'Projects', href: '/projects', icon: Building2 },
-    { name: 'Agents', href: '/agents', icon: UserCircle }, 
+  { name: 'Projects', href: '/projects', icon: Building2 },
+  { name: 'Agents', href: '/agents', icon: UserCircle },
+   { name: 'Contact Inquiry', href: '/contact-inquiry', icon: Mail }, 
   { name: 'User Management', href: '/users', icon: Users },
   { name: 'Admin Management', href: '/admin', icon: Settings },
 ];
