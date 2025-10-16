@@ -20,11 +20,8 @@ const AgentsManagement = () => {
     specialization: '',
     about_text: '',
     commission_rate: '',
-    rera_certificate: null,
-    pan_card: null,
-    aadhar_card: null,
-    resume_cv: null,
   });
+  const [documents, setDocuments] = useState([]);
 
   // Toast notification state
   const [toast, setToast] = useState({
@@ -58,10 +55,6 @@ const AgentsManagement = () => {
     specialization: '',
     about_text: '',
     commission_rate: '',
-    rera_certificate: null,
-    pan_card: null,
-    aadhar_card: null,
-    resume_cv: null,
   };
 
   // Fetch all agents (GET on port 8001)
@@ -133,11 +126,12 @@ const AgentsManagement = () => {
     // Append the agentdetails as JSON string
     formDataToSend.append('agentdetails', JSON.stringify(agentDetails));
 
-    // Append files individually using backend field names
-    if (formData.rera_certificate) formDataToSend.append('rera_certificate', formData.rera_certificate);
-    if (formData.pan_card) formDataToSend.append('pan_card', formData.pan_card);
-    if (formData.aadhar_card) formDataToSend.append('aadhar_card', formData.aadhar_card);
-    if (formData.resume_cv) formDataToSend.append('resume_cv', formData.resume_cv);
+    // Append all documents to the 'documents' field (backend expects multiple files with same field name)
+    documents.forEach((file) => {
+      if (file) {
+        formDataToSend.append('documents', file);
+      }
+    });
 
     try {
       const response = await fetch('http://127.0.0.1:8000/api/agents/create', {
@@ -199,6 +193,7 @@ const AgentsManagement = () => {
       console.log('Agent created successfully:', data);
 
       setFormData(initialFormData);
+      setDocuments([]);
       setIsFormOpen(false);
       showToast('Agent created successfully!', 'success');
       fetchAgents();
@@ -240,18 +235,30 @@ const AgentsManagement = () => {
     }
   };
 
-  // Handle file upload
+  // Handle file upload for multiple documents
   const handleFileChange = (e) => {
-    const { name, files } = e.target;
-    if (files[0] && files[0].size > 5 * 1024 * 1024) {
+    const { files } = e.target;
+    const newFiles = Array.from(files || []);
+    
+    // Check file sizes
+    const oversizedFiles = newFiles.filter(file => file.size > 5 * 1024 * 1024);
+    if (oversizedFiles.length > 0) {
       setError('File size must not exceed 5MB');
       showToast('File size must not exceed 5MB', 'error');
       return;
     }
-    setFormData((prev) => ({ ...prev, [name]: files[0] }));
-    if (files[0]) {
-      showToast(`${name.replace('_', ' ')} uploaded successfully`, 'success');
+    
+    // Add new files to documents state
+    setDocuments(prev => [...prev, ...newFiles]);
+    if (newFiles.length > 0) {
+      showToast(`${newFiles.length} document(s) uploaded successfully`, 'success');
     }
+  };
+
+  // Remove a document from the list
+  const removeDocument = (index) => {
+    setDocuments(prev => prev.filter((_, i) => i !== index));
+    showToast('Document removed', 'warning');
   };
 
   // Handle text input change
@@ -289,48 +296,67 @@ const AgentsManagement = () => {
   const getToastStyles = () => {
     switch (toast.type) {
       case 'success':
-        return 'bg-[#4CAF50] border-l-[#2E7D32]';
+        return 'bg-white border-l-[#4CAF50] text-gray-900';
       case 'error':
-        return 'bg-[#F44336] border-l-[#C62828]';
+        return 'bg-white border-l-[#F44336] text-gray-900';
       case 'warning':
-        return 'bg-[#FF9800] border-l-[#E65100]';
+        return 'bg-white border-l-[#FF9800] text-gray-900';
       default:
-        return 'bg-[#2196F3] border-l-[#1565C0]';
+        return 'bg-white border-l-[#2196F3] text-gray-900';
     }
   };
 
   const getToastIcon = () => {
     switch (toast.type) {
       case 'success':
-        return <CheckCircle className="w-5 h-5" />;
+        return <CheckCircle className="w-5 h-5 text-[#4CAF50]" />;
       case 'error':
-        return <XCircle className="w-5 h-5" />;
+        return <XCircle className="w-5 h-5 text-[#F44336]" />;
       case 'warning':
-        return <AlertCircle className="w-5 h-5" />;
+        return <AlertCircle className="w-5 h-5 text-[#FF9800]" />;
       default:
-        return <AlertCircle className="w-5 h-5" />;
+        return <AlertCircle className="w-5 h-5 text-[#2196F3]" />;
     }
   };
 
-  // Helper function to get documents from agent data
+  // Helper function to get documents from agent data - FIXED VERSION
   const getAgentDocuments = (agent) => {
     console.log('Agent data for documents:', agent); // Debug log
     
-    // Try different possible document field names from backend
-    if (agent.agent_documents && Array.isArray(agent.agent_documents) && agent.agent_documents.length > 0) {
+    if (!agent) return [];
+    
+    // Try agent_documents field first (this is where backend stores documents)
+    if (agent.agent_documents) {
       console.log('Found agent_documents:', agent.agent_documents);
-      return agent.agent_documents;
+      
+      // Handle different formats of agent_documents
+      if (Array.isArray(agent.agent_documents)) {
+        return agent.agent_documents;
+      } else if (typeof agent.agent_documents === 'string') {
+        // If it's a JSON string, parse it
+        try {
+          const parsedDocs = JSON.parse(agent.agent_documents);
+          console.log('Parsed agent_documents:', parsedDocs);
+          return Array.isArray(parsedDocs) ? parsedDocs : [];
+        } catch (e) {
+          console.error('Error parsing agent_documents JSON:', e);
+          return [];
+        }
+      }
     }
-    if (agent.documents && Array.isArray(agent.documents) && agent.documents.length > 0) {
+    
+    // Try other possible document field names
+    if (agent.documents && Array.isArray(agent.documents)) {
       console.log('Found documents:', agent.documents);
       return agent.documents;
     }
-    if (agent.files && Array.isArray(agent.files) && agent.files.length > 0) {
+    
+    if (agent.files && Array.isArray(agent.files)) {
       console.log('Found files:', agent.files);
       return agent.files;
     }
     
-    // Check for individual document fields
+    // Check for individual document fields as fallback
     const individualDocs = [];
     if (agent.rera_certificate) {
       individualDocs.push({ 
@@ -366,7 +392,7 @@ const AgentsManagement = () => {
       return individualDocs;
     }
     
-    console.log('No documents found');
+    console.log('No documents found in any field');
     return [];
   };
 
@@ -398,17 +424,17 @@ const AgentsManagement = () => {
     <div className="min-h-screen" style={{ backgroundColor: '#F8F9FA' }}>
       {/* Toast Notification */}
       {toast.show && (
-        <div className={`fixed bottom-4 right-4 z-[100] max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 ${getToastStyles()} transform transition-all duration-300 ease-in-out`}>
+        <div className={`fixed bottom-4 right-4 z-[100] max-w-sm w-full rounded-lg shadow-lg border-l-4 ${getToastStyles()} transform transition-all duration-300 ease-in-out`}>
           <div className="p-4 flex items-start gap-3">
-            <div className="flex-shrink-0 text-white">
+            <div className="flex-shrink-0">
               {getToastIcon()}
             </div>
             <div className="flex-1">
-              <p className="text-white font-medium">{toast.message}</p>
+              <p className="font-medium">{toast.message}</p>
             </div>
             <button
               onClick={() => setToast({ show: false, message: '', type: 'success' })}
-              className="flex-shrink-0 text-white hover:bg-white hover:bg-opacity-20 rounded-full p-1 transition-colors"
+              className="flex-shrink-0 text-gray-500 hover:bg-gray-100 rounded-full p-1 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -652,7 +678,10 @@ const AgentsManagement = () => {
             <div style={{ backgroundColor: '#1DB584' }} className="px-4 sm:px-6 py-4 flex justify-between items-center">
               <h3 className="text-xl font-bold text-white">Add New Agent</h3>
               <button
-                onClick={() => setIsFormOpen(false)}
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setDocuments([]);
+                }}
                 className="text-white text-2xl leading-none hover:bg-white hover:bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
               >
                 ✕
@@ -797,24 +826,30 @@ const AgentsManagement = () => {
 
                   <div>
                     <h3 className="text-lg font-semibold text-gray-700 mb-4">Required Documents</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-4">
+                      {/* Multiple file upload */}
                       <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload RERA Certificate</label>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Upload Documents (Multiple files allowed)
+                        </label>
                         <div className="flex items-center justify-between bg-yellow-100 p-2 rounded-lg border border-yellow-300">
                           <input
                             type="file"
-                            name="rera_certificate"
+                            multiple
                             onChange={handleFileChange}
                             accept="application/pdf,image/jpeg,image/png"
                             className="hidden"
-                            id="rera_certificate"
+                            id="documents"
                           />
-                          <label htmlFor="rera_certificate" className="flex-1 cursor-pointer text-gray-700">
-                            {formData.rera_certificate ? formData.rera_certificate.name : 'PDF, JPG or PNG (Max 5MB)'}
+                          <label htmlFor="documents" className="flex-1 cursor-pointer text-gray-700">
+                            {documents.length > 0 
+                              ? `${documents.length} file(s) selected` 
+                              : 'PDF, JPG or PNG files (Max 5MB each)'
+                            }
                           </label>
                           <button
                             type="button"
-                            onClick={() => document.getElementById('rera_certificate').click()}
+                            onClick={() => document.getElementById('documents').click()}
                             className="text-yellow-600 hover:text-yellow-700"
                           >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -823,88 +858,35 @@ const AgentsManagement = () => {
                           </button>
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload PAN Card</label>
-                        <div className="flex items-center justify-between bg-yellow-100 p-2 rounded-lg border border-yellow-300">
-                          <input
-                            type="file"
-                            name="pan_card"
-                            onChange={handleFileChange}
-                            accept="application/pdf"
-                            className="hidden"
-                            id="pan_card"
-                          />
-                          <label htmlFor="pan_card" className="flex-1 cursor-pointer text-gray-700">
-                            {formData.pan_card ? formData.pan_card.name : 'PDF format preferred (Max 5MB)'}
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => document.getElementById('pan_card').click()}
-                            className="text-yellow-600 hover:text-yellow-700"
-                          >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                          </button>
+
+                      {/* Selected files list */}
+                      {documents.length > 0 && (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-gray-700">Selected files:</p>
+                          {documents.map((file, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                              <span className="text-sm text-gray-600 truncate flex-1">{file.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => removeDocument(index)}
+                                className="text-red-500 hover:text-red-700 ml-2"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Aadhar Card</label>
-                        <div className="flex items-center justify-between bg-yellow-100 p-2 rounded-lg border border-yellow-300">
-                          <input
-                            type="file"
-                            name="aadhar_card"
-                            onChange={handleFileChange}
-                            accept="application/pdf"
-                            className="hidden"
-                            id="aadhar_card"
-                          />
-                          <label htmlFor="aadhar_card" className="flex-1 cursor-pointer text-gray-700">
-                            {formData.aadhar_card ? formData.aadhar_card.name : 'PDF format preferred (Max 5MB)'}
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => document.getElementById('aadhar_card').click()}
-                            className="text-yellow-600 hover:text-yellow-700"
-                          >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">Upload Resume/CV</label>
-                        <div className="flex items-center justify-between bg-yellow-100 p-2 rounded-lg border border-yellow-300">
-                          <input
-                            type="file"
-                            name="resume_cv"
-                            onChange={handleFileChange}
-                            accept="application/pdf"
-                            className="hidden"
-                            id="resume_cv"
-                          />
-                          <label htmlFor="resume_cv" className="flex-1 cursor-pointer text-gray-700">
-                            {formData.resume_cv ? formData.resume_cv.name : 'PDF format preferred (Max 5MB)'}
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => document.getElementById('resume_cv').click()}
-                            className="text-yellow-600 hover:text-yellow-700"
-                          >
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </div>
 
                   <div className="flex gap-3 pt-4 border-t border-gray-200">
                     <button
                       type="button"
-                      onClick={() => setIsFormOpen(false)}
+                      onClick={() => {
+                        setIsFormOpen(false);
+                        setDocuments([]);
+                      }}
                       className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                     >
                       Cancel

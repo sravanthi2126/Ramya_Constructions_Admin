@@ -12,12 +12,14 @@ import AdminManagement from "./pages/AdminManagement";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 import Agents from "./pages/Agents";
+import ContactInquiry from "./pages/ContactInquiry";
+import ContactInfo from "./pages/ContactInfo"; // ✅ Added import
 
 const queryClient = new QueryClient();
 
-// Simple auth check
+// ✅ Simple auth guard
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = localStorage.getItem('admin_token');
+  const isAuthenticated = localStorage.getItem("admin_token");
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
@@ -29,17 +31,22 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={
-            <PrivateRoute>
-              <AdminLayout />
-            </PrivateRoute>
-          }>
+          <Route
+            path="/"
+            element={
+              <PrivateRoute>
+                <AdminLayout />
+              </PrivateRoute>
+            }
+          >
             <Route index element={<Dashboard />} />
             <Route path="projects" element={<Projects />} />
             <Route path="schemes" element={<Schemes />} />
             <Route path="users" element={<UserManagement />} />
             <Route path="admin" element={<AdminManagement />} />
             <Route path="agents" element={<Agents />} />
+            <Route path="contact-inquiry" element={<ContactInquiry />} />
+            <Route path="contact-info" element={<ContactInfo />} /> {/* ✅ Added route */}
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

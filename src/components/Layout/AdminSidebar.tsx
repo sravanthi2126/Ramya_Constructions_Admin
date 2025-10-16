@@ -9,7 +9,8 @@ import {
   Menu,
   ChevronLeft,
   UserCircle,
-  Mail // ✅ Added Mail icon for Contact Inquiry
+  Mail,
+  Phone // ✅ Added Phone icon for Contact Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -24,7 +25,8 @@ const navigation = [
   { name: 'Schemes', href: '/schemes', icon: TrendingUp },
   { name: 'Projects', href: '/projects', icon: Building2 },
   { name: 'Agents', href: '/agents', icon: UserCircle },
-   { name: 'Contact Inquiry', href: '/contact-inquiry', icon: Mail }, 
+  { name: 'Contact Inquiry', href: '/contact-inquiry', icon: Mail },
+  { name: 'Contact Info', href: '/contact-info', icon: Phone }, // ✅ Added this line
   { name: 'User Management', href: '/users', icon: Users },
   { name: 'Admin Management', href: '/admin', icon: Settings },
 ];
