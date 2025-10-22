@@ -371,11 +371,15 @@ export const schemeApi = {
   },
 
   // Delete Scheme (Port 8000)
-  async deleteScheme(schemeId: string): Promise<ApiResponse> {
+ async deleteScheme(schemeId: string): Promise<ApiResponse> {
     try {
       const response = await fetch(`${SCHEME_API_BASE_URL_WRITE}/${schemeId}`, {
-        method: 'DELETE',
-        headers: getAuthHeader(),
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({ is_active: false }),
       });
 
       return handleResponse<ApiResponse>(response);
@@ -418,6 +422,34 @@ export interface QuickInfo {
   building_permission?: string;
 }
 
+export interface CreateProjectRequest {
+  title: string;
+  location: string;
+  description: string;
+  long_description: string;
+  website_url: string;
+  status: 'available' | 'sold_out' | 'coming_soon';
+  base_price: number;
+  property_type: 'commercial' | 'residential' | 'plot' | 'land' | 'mixed_use';
+  has_rental_income: boolean;
+  pricing_details?: PricingDetails;
+  quick_info?: QuickInfo;
+  gallery_images?: GalleryImage[];
+  key_highlights?: string[];
+  features?: string[];
+  investment_highlights?: string[];
+  amenities?: Amenity[];
+  total_units: number;
+  available_units: number;
+  sold_units: number;
+  reserved_units: number;
+  rera_number: string;
+  building_permission: string;
+  // Add these required fields
+  floor_number: number;
+  project_code: string;
+}
+
 export interface Project {
   id: string;
   title: string;
@@ -442,34 +474,12 @@ export interface Project {
   reserved_units: number;
   rera_number: string;
   building_permission: string;
+  // Add these fields
+  floor_number: number;
+  project_code: string;
   created_at: string;
   updated_at: string;
   is_active: boolean;
-}
-
-export interface CreateProjectRequest {
-  title: string;
-  location: string;
-  description: string;
-  long_description: string;
-  website_url: string;
-  status: 'available' | 'sold_out' | 'coming_soon';
-  base_price: number;
-  property_type: 'commercial' | 'residential' | 'plot' | 'land' | 'mixed_use';
-  has_rental_income: boolean;
-  pricing_details?: PricingDetails;
-  quick_info?: QuickInfo;
-  gallery_images?: GalleryImage[];
-  key_highlights?: string[];
-  features?: string[];
-  investment_highlights?: string[];
-  amenities?: Amenity[];
-  total_units: number;
-  available_units: number;
-  sold_units: number;
-  reserved_units: number;
-  rera_number: string;
-  building_permission: string;
 }
 
 export interface ProjectResponse {
@@ -698,8 +708,14 @@ export const projectApi = {
         method: 'DELETE',
         headers: getAuthHeader(),
       });
+       const result = await handleResponse<ProjectResponse>(response);
+    
+    // Ensure consistent response format
+    return {
+      message: result.message || 'Project deleted successfully',
+      data: result.data
+    };
 
-      return handleResponse<ProjectResponse>(response);
     } catch (error) {
       return handleNetworkError(error);
     }

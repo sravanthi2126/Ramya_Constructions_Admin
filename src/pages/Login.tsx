@@ -1,15 +1,15 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Building2, Lock, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Building2, Lock, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -19,10 +19,10 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/admins/login', {
-        method: 'POST',
+      const response = await fetch("http://127.0.0.1:8000/api/admins/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
@@ -34,32 +34,36 @@ export default function Login() {
 
       if (response.ok && data.success) {
         // Store the access token and user data
-        localStorage.setItem('admin_token', data.data.access_token);
-        localStorage.setItem('admin_user', JSON.stringify({
-          id: data.data.id,
-          name: data.data.name,
-          email: data.data.email,
-        }));
+        localStorage.setItem("admin_token", data.data.access_token);
+        localStorage.setItem(
+          "admin_user",
+          JSON.stringify({
+            id: data.data.id,
+            name: data.data.name,
+            email: data.data.email,
+          })
+        );
 
         toast({
-          title: 'Login successful',
+          title: "Login successful",
           description: `Welcome ${data.data.name}!`,
         });
-        
-        navigate('/admin-management'); // Adjust to your route
+
+        navigate("/"); // Adjust to your route
       } else {
         toast({
-          title: 'Login failed',
-          description: data.detail || 'Invalid credentials. Please try again.',
-          variant: 'destructive',
+          title: "Login failed",
+          description: data.detail || "Invalid credentials. Please try again.",
+          variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       toast({
-        title: 'Login failed',
-        description: 'Network error. Please check your connection and try again.',
-        variant: 'destructive',
+        title: "Login failed",
+        description:
+          "Network error. Please check your connection and try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -114,12 +118,8 @@ export default function Login() {
             </div>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 

@@ -95,7 +95,7 @@
 //     try {
 //       setLoading(true);
 //       const token = localStorage.getItem('admin_token');
-      
+
 //       const response = await fetch('http://127.0.0.1:8000/api/admins/create', {
 //         method: 'POST',
 //         headers: {
@@ -110,13 +110,13 @@
 //       });
 
 //       const result = await response.json();
-      
+
 //       if (response.ok) {
 //         toast({
 //           title: 'Success',
 //           description: result.message || 'Admin created successfully!',
 //         });
-        
+
 //         // Use the actual admin data returned from backend
 //         if (result.data) {
 //           const newAdmin: Admin = {
@@ -128,7 +128,7 @@
 //           };
 //           setAdmins((prev) => [...prev, newAdmin]);
 //         }
-        
+
 //         setIsCreateDialogOpen(false);
 //         resetForm();
 //       } else {
@@ -181,7 +181,7 @@
 //         });
 //         return;
 //       }
-      
+
 //       const response = await fetch(`http://127.0.0.1:8000/api/admins/${selectedAdmin.id}`, {
 //         method: 'PUT',
 //         headers: {
@@ -202,7 +202,7 @@
 //           title: 'Success',
 //           description: result.message || 'Admin updated successfully!',
 //         });
-        
+
 //         // Use the actual updated data from backend
 //         if (result.data) {
 //           setAdmins((prev) =>
@@ -219,7 +219,7 @@
 //             )
 //           );
 //         }
-        
+
 //         setIsEditDialogOpen(false);
 //         resetForm();
 //         setSelectedAdmin(null);
@@ -257,7 +257,7 @@
 //         });
 //         return;
 //       }
-      
+
 //       const response = await fetch(`http://127.0.0.1:8000/api/admins/${selectedAdmin.id}`, {
 //         method: 'DELETE',
 //         headers: {
@@ -272,7 +272,7 @@
 //           title: 'Success',
 //           description: result.message || 'Admin deleted successfully!',
 //         });
-        
+
 //         setAdmins((prev) => prev.filter((admin) => admin.id !== selectedAdmin.id));
 //         setIsDeleteDialogOpen(false);
 //         setSelectedAdmin(null);
@@ -556,22 +556,27 @@
 //   );
 // }
 
-
-
-
-import { useState, useEffect } from 'react';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Users, Edit, Trash2, Plus, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Users,
+  Edit,
+  Trash2,
+  Plus,
+  Eye,
+  EyeOff,
+  RefreshCw,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -581,9 +586,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import { adminApi, Admin, ApiError } from '@/api/apiService';
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+import { adminApi, Admin, ApiError } from "@/api/apiService";
 
 interface AdminFormData {
   name: string;
@@ -600,9 +605,9 @@ export default function AdminManagement() {
   const [fetchingAdmins, setFetchingAdmins] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<Admin | null>(null);
   const [formData, setFormData] = useState<AdminFormData>({
-    name: '',
-    email: '',
-    password: '',
+    name: "",
+    email: "",
+    password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [pagination, setPagination] = useState({
@@ -625,7 +630,7 @@ export default function AdminManagement() {
         pagination.page,
         pagination.limit
       );
-      
+
       setAdmins(response.admins);
       setPagination((prev) => ({
         ...prev,
@@ -633,7 +638,7 @@ export default function AdminManagement() {
         totalAdmins: response.total_admins,
       }));
     } catch (error) {
-      handleApiError(error, 'Failed to fetch admins');
+      handleApiError(error, "Failed to fetch admins");
     } finally {
       setFetchingAdmins(false);
     }
@@ -645,57 +650,61 @@ export default function AdminManagement() {
       switch (error.status) {
         case 401:
           toast({
-            title: 'Authentication Error',
-            description: 'Your session has expired. Please log in again.',
-            variant: 'destructive',
+            title: "Authentication Error",
+            description: "Your session has expired. Please log in again.",
+            variant: "destructive",
           });
           // Optionally redirect to login
           // window.location.href = '/login';
           break;
         case 403:
           toast({
-            title: 'Permission Denied',
-            description: error.detail || 'You do not have permission to perform this action.',
-            variant: 'destructive',
+            title: "Permission Denied",
+            description:
+              error.detail ||
+              "You do not have permission to perform this action.",
+            variant: "destructive",
           });
           break;
         case 404:
           toast({
-            title: 'Not Found',
-            description: error.detail || 'The requested resource was not found.',
-            variant: 'destructive',
+            title: "Not Found",
+            description:
+              error.detail || "The requested resource was not found.",
+            variant: "destructive",
           });
           break;
         case 400:
           toast({
-            title: 'Invalid Request',
-            description: error.detail || 'Please check your input and try again.',
-            variant: 'destructive',
+            title: "Invalid Request",
+            description:
+              error.detail || "Please check your input and try again.",
+            variant: "destructive",
           });
           break;
         case 0:
           // Network error
           toast({
-            title: 'Connection Error',
+            title: "Connection Error",
             description: error.detail,
-            variant: 'destructive',
+            variant: "destructive",
           });
           break;
         default:
           toast({
             title: `Error ${error.status}`,
             description: error.detail || defaultMessage,
-            variant: 'destructive',
+            variant: "destructive",
           });
       }
     } else {
       toast({
-        title: 'Unexpected Error',
+        title: "Unexpected Error",
         description: defaultMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     }
-    console.error('API Error:', error);
+    console.error("API Error:", error);
   };
 
   // Updated email validation with stricter rules (enforces @, valid domain, and TLD like .com/.in)
@@ -707,36 +716,37 @@ export default function AdminManagement() {
   const validateForm = (isUpdate: boolean = false): boolean => {
     if (!formData.name.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Name is required.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Name is required.",
+        variant: "destructive",
       });
       return false;
     }
 
     if (!validateEmail(formData.email)) {
       toast({
-        title: 'Validation Error',
-        description: 'Please enter a valid email address (must include @ and end with a domain like .com or .in).',
-        variant: 'destructive',
+        title: "Validation Error",
+        description:
+          "Please enter a valid email address (must include @ and end with a domain like .com or .in).",
+        variant: "destructive",
       });
       return false;
     }
 
     if (!isUpdate && formData.password.length < 6) {
       toast({
-        title: 'Validation Error',
-        description: 'Password must be at least 6 characters long.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
       });
       return false;
     }
 
     if (isUpdate && formData.password && formData.password.length < 6) {
       toast({
-        title: 'Validation Error',
-        description: 'Password must be at least 6 characters long.',
-        variant: 'destructive',
+        title: "Validation Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
       });
       return false;
     }
@@ -750,13 +760,13 @@ export default function AdminManagement() {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', password: '' });
+    setFormData({ name: "", email: "", password: "" });
     setShowPassword(false);
   };
 
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
     try {
@@ -768,17 +778,17 @@ export default function AdminManagement() {
       });
 
       toast({
-        title: 'Success',
-        description: response.message || 'Admin created successfully!',
+        title: "Success",
+        description: response.message || "Admin created successfully!",
       });
 
       // Refresh the admin list
       await fetchAdmins();
-      
+
       setIsCreateDialogOpen(false);
       resetForm();
     } catch (error) {
-      handleApiError(error, 'Failed to create admin');
+      handleApiError(error, "Failed to create admin");
     } finally {
       setLoading(false);
     }
@@ -792,7 +802,7 @@ export default function AdminManagement() {
 
     try {
       setLoading(true);
-      
+
       const updateData: any = {
         name: formData.name,
         email: formData.email,
@@ -806,18 +816,18 @@ export default function AdminManagement() {
       const response = await adminApi.updateAdmin(selectedAdmin.id, updateData);
 
       toast({
-        title: 'Success',
-        description: response.message || 'Admin updated successfully!',
+        title: "Success",
+        description: response.message || "Admin updated successfully!",
       });
 
       // Refresh the admin list
       await fetchAdmins();
-      
+
       setIsEditDialogOpen(false);
       resetForm();
       setSelectedAdmin(null);
     } catch (error) {
-      handleApiError(error, 'Failed to update admin');
+      handleApiError(error, "Failed to update admin");
     } finally {
       setLoading(false);
     }
@@ -831,17 +841,17 @@ export default function AdminManagement() {
       const response = await adminApi.deleteAdmin(selectedAdmin.id);
 
       toast({
-        title: 'Success',
-        description: response.message || 'Admin deleted successfully!',
+        title: "Success",
+        description: response.message || "Admin deleted successfully!",
       });
 
       // Refresh the admin list
       await fetchAdmins();
-      
+
       setIsDeleteDialogOpen(false);
       setSelectedAdmin(null);
     } catch (error) {
-      handleApiError(error, 'Failed to delete admin');
+      handleApiError(error, "Failed to delete admin");
     } finally {
       setLoading(false);
     }
@@ -852,7 +862,7 @@ export default function AdminManagement() {
     setFormData({
       name: admin.name,
       email: admin.email,
-      password: '',
+      password: "",
     });
     setIsEditDialogOpen(true);
   };
@@ -872,95 +882,148 @@ export default function AdminManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Admin Management</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage system administrators and their permissions
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={fetchAdmins}
-            disabled={fetchingAdmins}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${fetchingAdmins ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add New Admin
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Admin</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleCreateAdmin} className="space-y-4">
-                <div>
-                  <Label htmlFor="create-name">Full Name</Label>
-                  <Input
-                    id="create-name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter full name"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="create-email">Email</Label>
-                  <Input
-                    id="create-email"
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter email address"
-                    required
-                  />
-                </div>
-                <div className="relative">
-                  <Label htmlFor="create-password">Password</Label>
-                  <Input
-                    id="create-password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Enter password (min. 6 characters)"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={togglePasswordVisibility}
-                    className="absolute right-2 top-8 text-gray-500"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                <div className="flex justify-end space-x-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsCreateDialogOpen(false);
-                      resetForm();
-                    }}
-                    disabled={loading}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? 'Creating...' : 'Create Admin'}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              Admin Management
+            </h1>
+            <p className="text-gray-600 mt-2 text-sm sm:text-base">
+              Manage system administrators and their permissions
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <Button
+              variant="outline"
+              onClick={fetchAdmins}
+              disabled={fetchingAdmins}
+              className="flex items-center justify-center gap-2 border-gray-300 hover:bg-gray-50"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${fetchingAdmins ? "animate-spin" : ""}`}
+              />
+              Refresh
+            </Button>
+
+            <Dialog
+              open={isCreateDialogOpen}
+              onOpenChange={setIsCreateDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <Button className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-sm">
+                  <Plus className="w-4 h-4" />
+                  Add New Admin
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-white rounded-xl shadow-xl border border-gray-200 max-w-md sm:max-w-lg">
+                <DialogHeader className="border-b border-gray-200 pb-4">
+                  <DialogTitle className="text-xl font-semibold text-gray-900">
+                    Add New Admin
+                  </DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreateAdmin} className="space-y-4 p-1">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="create-name"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Full Name *
+                    </Label>
+                    <Input
+                      id="create-name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      placeholder="Enter full name"
+                      required
+                      className="border-gray-300 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="create-email"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Email *
+                    </Label>
+                    <Input
+                      id="create-email"
+                      name="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      placeholder="Enter email address"
+                      required
+                      className="border-gray-300 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="create-password"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Password *
+                    </Label>
+                    <div className="relative">
+                      <Input
+                        id="create-password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        value={formData.password}
+                        onChange={handleInputChange}
+                        placeholder="Enter password (min. 6 characters)"
+                        required
+                        className="border-gray-300 focus:border-blue-500 pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={togglePasswordVisibility}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-5 h-5" />
+                        ) : (
+                          <Eye className="w-5 h-5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsCreateDialogOpen(false);
+                        resetForm();
+                      }}
+                      disabled={loading}
+                      className="border-gray-300 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={loading}
+                      className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-sm"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                          Creating...
+                        </>
+                      ) : (
+                        "Create Admin"
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </div>
 
@@ -972,7 +1035,8 @@ export default function AdminManagement() {
           <div>
             <h3 className="font-semibold text-lg">System Administrators</h3>
             <p className="text-sm text-muted-foreground">
-              {pagination.totalAdmins} admin{pagination.totalAdmins !== 1 ? 's' : ''} registered
+              {pagination.totalAdmins} admin
+              {pagination.totalAdmins !== 1 ? "s" : ""} registered
             </p>
           </div>
         </div>
@@ -984,7 +1048,9 @@ export default function AdminManagement() {
           </div>
         ) : admins.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-muted-foreground">No admins found. Create your first admin above.</p>
+            <p className="text-muted-foreground">
+              No admins found. Create your first admin above.
+            </p>
           </div>
         ) : (
           <>
@@ -996,11 +1062,16 @@ export default function AdminManagement() {
                 >
                   <div className="flex-1">
                     <h4 className="font-medium">{admin.name}</h4>
-                    <p className="text-sm text-muted-foreground">{admin.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {admin.email}
+                    </p>
                     <div className="flex space-x-4 mt-1 text-xs text-muted-foreground">
                       <span>ID: {admin.id.slice(0, 8)}...</span>
                       {admin.updated_at && (
-                        <span>Updated: {new Date(admin.updated_at).toLocaleDateString()}</span>
+                        <span>
+                          Updated:{" "}
+                          {new Date(admin.updated_at).toLocaleDateString()}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -1045,7 +1116,9 @@ export default function AdminManagement() {
                   variant="outline"
                   size="sm"
                   onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page === pagination.totalPages || fetchingAdmins}
+                  disabled={
+                    pagination.page === pagination.totalPages || fetchingAdmins
+                  }
                 >
                   Next
                 </Button>
@@ -1090,7 +1163,7 @@ export default function AdminManagement() {
               <Input
                 id="edit-password"
                 name="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={formData.password}
                 onChange={handleInputChange}
                 placeholder="Leave blank to keep current password"
@@ -1100,7 +1173,11 @@ export default function AdminManagement() {
                 onClick={togglePasswordVisibility}
                 className="absolute right-2 top-8 text-gray-500"
               >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
               </button>
             </div>
             <div className="flex justify-end space-x-2">
@@ -1117,7 +1194,7 @@ export default function AdminManagement() {
                 Cancel
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? 'Updating...' : 'Update Admin'}
+                {loading ? "Updating..." : "Update Admin"}
               </Button>
             </div>
           </form>
@@ -1125,12 +1202,16 @@ export default function AdminManagement() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Admin</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete admin "{selectedAdmin?.name}"? This action cannot be undone.
+              Are you sure you want to delete admin "{selectedAdmin?.name}"?
+              This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1148,7 +1229,7 @@ export default function AdminManagement() {
               disabled={loading}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {loading ? 'Deleting...' : 'Delete'}
+              {loading ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

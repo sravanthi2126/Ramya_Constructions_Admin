@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { User, LogOut, ChevronDown } from 'lucide-react';
-import { AdminSidebar } from './AdminSidebar';
-import { cn } from '@/lib/utils';
+import { useState } from "react";
+import { Outlet, useNavigate } from "react-router-dom";
+import { User, LogOut, ChevronDown } from "lucide-react";
+import { AdminSidebar } from "./AdminSidebar";
+import { cn } from "@/lib/utils";
 
 export function AdminLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -20,36 +20,46 @@ export function AdminLayout() {
   const handleProfile = () => {
     setShowProfileDropdown(false);
     // Navigate to profile page or show profile modal
-    navigate('/admin/profile');
+    navigate("/admin/profile");
   };
 
   const handleLogout = () => {
     setShowProfileDropdown(false);
     // Add your logout logic here
     // For example: clear tokens, redirect to login
-    localStorage.removeItem('authToken'); // Example
-    navigate('/login');
+    localStorage.removeItem("authToken"); // Example
+    navigate("/login");
   };
 
   // Mock user data - replace with actual user data from context/store
   const user = {
-    name: 'Admin User',
-    email: 'admin@example.com',
-    avatar: null // You can add avatar URL here
+    name: "Admin User",
+    email: "admin@example.com",
+    avatar: null, // You can add avatar URL here
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <AdminSidebar isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
-      
+      <AdminSidebar
+        isCollapsed={isCollapsed}
+        onToggleCollapse={toggleCollapse}
+      />
+
       {/* Fixed Header */}
-      <header 
+      <header
         className={cn(
-          "fixed top-0 right-0 z-40 bg-gray-50/80 backdrop-blur-sm border-b border-gray-200/60 transition-all duration-300 ease-in-out shadow-sm",
+          "fixed top-0 right-0 z-40 bg-white/70 backdrop-blur-md border-b border-gray-200/40 transition-all duration-300 ease-in-out",
           isCollapsed ? "left-16" : "left-64"
         )}
       >
-        <div className="flex items-center justify-end h-16 px-6">
+        <div className="flex items-center justify-between h-16 px-6">
+          {/* Page Title - Left Side */}
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Admin Dashboard
+            </h1>
+          </div>
+
           <div className="relative">
             {/* Profile Button */}
             <button
@@ -58,19 +68,21 @@ export function AdminLayout() {
             >
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow duration-200">
                 {user.avatar ? (
-                  <img 
-                    src={user.avatar} 
-                    alt="Profile" 
+                  <img
+                    src={user.avatar}
+                    alt="Profile"
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
                   <User className="w-5 h-5 text-white" />
                 )}
               </div>
-              <ChevronDown className={cn(
-                "w-5 h-5 text-gray-600 transition-transform duration-200",
-                showProfileDropdown && "rotate-180"
-              )} />
+              <ChevronDown
+                className={cn(
+                  "w-5 h-5 text-gray-600 transition-transform duration-200",
+                  showProfileDropdown && "rotate-180"
+                )}
+              />
             </button>
 
             {/* Profile Dropdown */}
@@ -81,9 +93,9 @@ export function AdminLayout() {
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
                       {user.avatar ? (
-                        <img 
-                          src={user.avatar} 
-                          alt="Profile" 
+                        <img
+                          src={user.avatar}
+                          alt="Profile"
                           className="w-12 h-12 rounded-full object-cover"
                         />
                       ) : (
@@ -100,7 +112,7 @@ export function AdminLayout() {
                 {/* Menu Items */}
                 <div className="py-2">
                   <button
-                    onClick={handleProfile}
+                    // onClick={handleProfile}
                     className="flex items-center w-full px-5 py-3 text-sm text-gray-700 hover:bg-blue-50/70 transition-colors duration-200 group"
                   >
                     <User className="w-5 h-5 mr-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
@@ -121,7 +133,7 @@ export function AdminLayout() {
       </header>
 
       {/* Main Content */}
-      <main 
+      <main
         className={cn(
           "transition-all duration-300 ease-in-out pt-16", // Added pt-16 for header space
           isCollapsed ? "ml-16" : "ml-64"
@@ -134,8 +146,8 @@ export function AdminLayout() {
 
       {/* Click outside to close dropdown */}
       {showProfileDropdown && (
-        <div 
-          className="fixed inset-0 z-30" 
+        <div
+          className="fixed inset-0 z-30"
           onClick={() => setShowProfileDropdown(false)}
         />
       )}

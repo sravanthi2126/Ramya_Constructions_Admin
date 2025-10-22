@@ -7,11 +7,10 @@ import {
   Trash,
   Edit,
   Building,
-  Calendar,
   Search,
-  Filter,
   X,
   Plus,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,11 +30,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Projects() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [filteredProjects, setFilteredProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,10 +66,12 @@ export default function Projects() {
       setFilteredProjects(response.projects);
     } catch (err: any) {
       const errorMessage =
-        err.detail || "Failed to fetch projects. Please try again.";
+        err.detail ||
+        err.message ||
+        "Failed to fetch projects. Please try again.";
       setError(errorMessage);
       toast({
-        title: "Error",
+        title: "Error Loading Projects",
         description: errorMessage,
         variant: "destructive",
       });
@@ -74,27 +88,19 @@ export default function Projects() {
   useEffect(() => {
     let filtered = projects;
 
-    // Apply search filter
     if (searchTerm) {
       filtered = filtered.filter(
         (project) =>
           project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           project.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          project.description
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          project.long_description
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase())
+          project.project_code.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
-    // Apply status filter
     if (statusFilter !== "all") {
       filtered = filtered.filter((project) => project.status === statusFilter);
     }
 
-    // Apply property type filter
     if (propertyTypeFilter !== "all") {
       filtered = filtered.filter(
         (project) => project.property_type === propertyTypeFilter
@@ -103,6 +109,48 @@ export default function Projects() {
 
     setFilteredProjects(filtered);
   }, [projects, searchTerm, statusFilter, propertyTypeFilter]);
+
+  const handleDeleteClick = (projectId: string) => {
+    setProjectToDelete(projectId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!projectToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await projectApi.deleteProject(projectToDelete);
+
+      toast({
+        title: "✅ Project Deleted",
+        description:
+          response.message || "Project has been successfully deleted.",
+        className: "bg-green-50 border-green-200 text-green-800",
+      });
+
+      // Remove from local state immediately for better UX
+      setProjects((prev) => prev.filter((p) => p.id !== projectToDelete));
+    } catch (err: any) {
+      const errorMessage =
+        err.detail ||
+        err.message ||
+        "Failed to delete project. Please try again.";
+
+      toast({
+        title: "❌ Delete Failed",
+        description: errorMessage,
+        variant: "destructive",
+      });
+
+      // Refresh the list in case of error to ensure consistency
+      fetchProjects();
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmOpen(false);
+      setProjectToDelete(null);
+    }
+  };
 
   const handleViewProject = (project: Project) => {
     setSelectedProject(project);
@@ -114,36 +162,10 @@ export default function Projects() {
     setIsEditDialogOpen(true);
   };
 
-  const handleDeleteProject = async (projectId: string) => {
-    if (
-      !confirm(
-        "Are you sure you want to delete this project? This action cannot be undone."
-      )
-    )
-      return;
-
-    try {
-      const response = await projectApi.deleteProject(projectId);
-      toast({
-        title: "Success",
-        description: response.message || "Project deleted successfully",
-      });
-      fetchProjects(); // Refresh the list
-    } catch (err: any) {
-      const errorMessage =
-        err.detail || "Failed to delete project. Please try again.";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleProjectAdded = () => {
     fetchProjects();
     toast({
-      title: "Success",
+      title: "✅ Success",
       description: "Project created successfully",
     });
   };
@@ -153,7 +175,7 @@ export default function Projects() {
     setIsEditDialogOpen(false);
     setSelectedProject(null);
     toast({
-      title: "Success",
+      title: "✅ Success",
       description: "Project updated successfully",
     });
   };
@@ -167,13 +189,13 @@ export default function Projects() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "available":
-        return "bg-green-100 text-green-800 border-green-200 dark:bg-green-900 dark:text-green-300";
+        return "bg-green-100 text-green-800 border-green-200";
       case "sold_out":
-        return "bg-red-100 text-red-800 border-red-200 dark:bg-red-900 dark:text-red-300";
+        return "bg-red-100 text-red-800 border-red-200";
       case "coming_soon":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-900 dark:text-yellow-300";
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-800 dark:text-gray-300";
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -193,7 +215,7 @@ export default function Projects() {
 
   // Loading Skeleton
   const ProjectSkeleton = () => (
-    <Card className="p-4 sm:p-6">
+    <Card className="p-6">
       <div className="space-y-4">
         <div className="flex items-start justify-between">
           <div className="space-y-2 flex-1">
@@ -229,19 +251,19 @@ export default function Projects() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-4 sm:p-6">
+      <div className="space-y-6 p-6">
         <div>
           <Skeleton className="h-8 w-48 mb-2" />
           <Skeleton className="h-4 w-64" />
         </div>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex justify-between items-center">
           <div>
             <Skeleton className="h-6 w-32 mb-1" />
             <Skeleton className="h-4 w-24" />
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <ProjectSkeleton key={i} />
           ))}
@@ -252,34 +274,30 @@ export default function Projects() {
 
   if (error && projects.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-96 p-4">
+      <div className="flex items-center justify-center min-h-96">
         <div className="text-center max-w-md">
           <div className="text-destructive text-lg font-semibold mb-2">
             Error Loading Projects
           </div>
           <div className="text-muted-foreground text-sm mb-4">{error}</div>
-          <Button onClick={fetchProjects} size="sm">
-            Try Again
-          </Button>
+          <Button onClick={fetchProjects}>Try Again</Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-          Projects
-        </h1>
-        <p className="text-muted-foreground text-sm sm:text-base">
+        <h1 className="text-3xl font-bold text-foreground">Projects</h1>
+        <p className="text-muted-foreground">
           Manage and monitor all property projects
         </p>
       </div>
 
       {/* Stats and Add Button */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex justify-between items-center">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">All Projects</h2>
           <p className="text-sm text-muted-foreground">
@@ -300,21 +318,21 @@ export default function Projects() {
       </div>
 
       {/* Search and Filters */}
-      <Card className="p-4 sm:p-6">
+      <Card className="p-6">
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex gap-4">
             {/* Search Input */}
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
-                placeholder="Search projects by title, location, description..."
+                placeholder="Search projects by title, location, code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-10"
               />
               {searchTerm && (
                 <X
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 cursor-pointer"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 cursor-pointer hover:text-foreground"
                   onClick={() => setSearchTerm("")}
                 />
               )}
@@ -322,7 +340,7 @@ export default function Projects() {
 
             {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -338,7 +356,7 @@ export default function Projects() {
               value={propertyTypeFilter}
               onValueChange={setPropertyTypeFilter}
             >
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Property Type" />
               </SelectTrigger>
               <SelectContent>
@@ -368,20 +386,18 @@ export default function Projects() {
         </div>
       </Card>
 
-      {error && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 dark:bg-yellow-900/20 dark:border-yellow-800">
-          <div className="text-yellow-800 dark:text-yellow-300 text-sm">
-            {error}
-          </div>
+      {error && projects.length > 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="text-yellow-800 text-sm">{error}</div>
         </div>
       )}
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredProjects.map((project) => (
           <Card
             key={project.id}
-            className="p-4 sm:p-6 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20 group"
+            className="p-6 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20 group"
           >
             <div className="space-y-4">
               {/* Header with Title and Status */}
@@ -436,11 +452,23 @@ export default function Projects() {
                   </span>
                 </div>
 
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Floor:</span>
+                  <span className="font-medium">{project.floor_number}</span>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Code:</span>
+                  <span className="font-medium text-xs bg-gray-100 px-2 py-1 rounded">
+                    {project.project_code}
+                  </span>
+                </div>
+
                 {project.rera_number && (
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">RERA:</span>
                     <span
-                      className="font-medium text-xs truncate max-w-[120px]"
+                      className="font-medium text-xs truncate max-w-[120px] bg-blue-50 px-2 py-1 rounded"
                       title={project.rera_number}
                     >
                       {project.rera_number}
@@ -484,29 +512,30 @@ export default function Projects() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewProject(project)}
-                    className="text-xs sm:text-sm"
                   >
-                    <Eye className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    <Eye className="w-4 h-4 mr-1" />
                     View
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditProject(project)}
-                    className="text-xs sm:text-sm"
                   >
-                    <Edit className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                    <Edit className="w-4 h-4 mr-1" />
                     Edit
                   </Button>
                 </div>
                 <Button
                   variant="destructive"
                   size="sm"
-                  className="w-full text-xs sm:text-sm"
-                  onClick={() => handleDeleteProject(project.id)}
+                  className="w-full"
+                  onClick={() => handleDeleteClick(project.id)}
+                  disabled={isDeleting}
                 >
-                  <Trash className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                  Delete
+                  <Trash className="w-4 h-4 mr-1" />
+                  {isDeleting && projectToDelete === project.id
+                    ? "Deleting..."
+                    : "Delete"}
                 </Button>
               </div>
             </div>
@@ -515,7 +544,7 @@ export default function Projects() {
       </div>
 
       {filteredProjects.length === 0 && !isLoading && (
-        <div className="text-center py-12 sm:py-16 border-2 border-dashed rounded-lg">
+        <div className="text-center py-16 border-2 border-dashed rounded-lg">
           <div className="text-muted-foreground mb-4 text-lg">
             {projects.length === 0
               ? "No projects found"
@@ -532,6 +561,32 @@ export default function Projects() {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Project
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              project and remove all associated data from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete Project"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Project Details Modal */}
       <ProjectDetailsModal
