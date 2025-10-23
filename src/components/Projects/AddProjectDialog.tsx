@@ -1,3 +1,4 @@
+// components/Projects/AddProjectDialog.tsx
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Plus, X, Upload, AlertCircle, CheckCircle2 } from "lucide-react";
@@ -6,7 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  DialogTrigger, // Add this import
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +63,6 @@ export function AddProjectDialog({
     reset,
     setValue,
     watch,
-    trigger,
     formState: { errors },
   } = useForm<ProjectFormData>({
     defaultValues: {
@@ -141,8 +141,6 @@ export function AddProjectDialog({
         is_active: true,
       };
 
-      console.log("Submitting project data:", projectData);
-
       const response = await projectApi.createProject(
         projectData,
         selectedImages
@@ -181,19 +179,6 @@ export function AddProjectDialog({
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "available":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "sold_out":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "coming_soon":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
-  };
-
   const getPropertyTypeColor = (type: string) => {
     switch (type) {
       case "residential":
@@ -223,7 +208,7 @@ export function AddProjectDialog({
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto rounded-lg">
         <DialogHeader className="flex flex-row items-center justify-between pb-4 border-b">
-          <DialogTitle className="text-2xl font-bold text-gray-900">
+          <DialogTitle className="text-xl md:text-2xl font-bold text-gray-900">
             Add New Project
           </DialogTitle>
           <Button
@@ -237,39 +222,6 @@ export function AddProjectDialog({
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-2">
-          {/* Quick Stats Preview */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-gray-50 rounded-lg">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
-                {totalUnits}
-              </div>
-              <div className="text-xs text-gray-600">Total Units</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {availableUnits}
-              </div>
-              <div className="text-xs text-gray-600">Available</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                {soldUnits}
-              </div>
-              <div className="text-xs text-gray-600">Sold</div>
-            </div>
-            <div className="text-center">
-              <div className="text-lg font-semibold">
-                <Badge
-                  variant="secondary"
-                  className={getStatusColor(watch("status"))}
-                >
-                  {watch("status")?.replace("_", " ") || "Available"}
-                </Badge>
-              </div>
-              <div className="text-xs text-gray-600 mt-1">Status</div>
-            </div>
-          </div>
-
           {/* Basic Information */}
           <div className="space-y-4 p-4 border rounded-lg bg-white">
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -467,7 +419,7 @@ export function AddProjectDialog({
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50">
                     <SelectItem value="available">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
@@ -503,7 +455,7 @@ export function AddProjectDialog({
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select property type" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50">
                     <SelectItem value="residential">Residential</SelectItem>
                     <SelectItem value="commercial">Commercial</SelectItem>
                     <SelectItem value="plot">Plot</SelectItem>
@@ -787,7 +739,6 @@ export function AddProjectDialog({
               disabled={isLoading}
               className="w-full sm:w-auto order-2 sm:order-1"
             >
-              <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
             <Button

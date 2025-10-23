@@ -1,10 +1,12 @@
-import { Users, Building2, TrendingUp, DollarSign } from 'lucide-react';
-import { StatsCard } from '@/components/Dashboard/StatsCard';
-import { DashboardChart } from '@/components/Dashboard/DashboardChart';
-import { mockDashboardStats } from '@/data/mockData';
+import { Users, Building2, TrendingUp, DollarSign } from "lucide-react";
+import { StatsCard } from "@/components/Dashboard/StatsCard";
+import { DashboardChart } from "@/components/Dashboard/DashboardChart";
+import { mockDashboardStats } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Dashboard() {
   const stats = mockDashboardStats;
+  const { user } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -12,7 +14,8 @@ export default function Dashboard() {
       <div>
         <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Welcome back! Here's what's happening with your business today.
+          Welcome back, {user?.name}! Here's what's happening with your business
+          today.
         </p>
       </div>
 

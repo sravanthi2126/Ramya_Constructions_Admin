@@ -11,6 +11,7 @@ import {
   X,
   Plus,
   AlertTriangle,
+  Filter,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,6 +56,7 @@ export default function Projects() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<string>("all");
+  const [showFilters, setShowFilters] = useState(false);
   const { toast } = useToast();
 
   const fetchProjects = async () => {
@@ -184,6 +186,7 @@ export default function Projects() {
     setSearchTerm("");
     setStatusFilter("all");
     setPropertyTypeFilter("all");
+    setShowFilters(false);
   };
 
   const getStatusColor = (status: string) => {
@@ -251,19 +254,19 @@ export default function Projects() {
 
   if (isLoading) {
     return (
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 p-4 md:p-6">
         <div>
           <Skeleton className="h-8 w-48 mb-2" />
           <Skeleton className="h-4 w-64" />
         </div>
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <Skeleton className="h-6 w-32 mb-1" />
             <Skeleton className="h-4 w-24" />
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
           {[...Array(6)].map((_, i) => (
             <ProjectSkeleton key={i} />
           ))}
@@ -274,7 +277,7 @@ export default function Projects() {
 
   if (error && projects.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-96">
+      <div className="flex items-center justify-center min-h-96 p-4">
         <div className="text-center max-w-md">
           <div className="text-destructive text-lg font-semibold mb-2">
             Error Loading Projects
@@ -287,17 +290,19 @@ export default function Projects() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Projects</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">
+          Projects
+        </h1>
+        <p className="text-muted-foreground text-sm md:text-base">
           Manage and monitor all property projects
         </p>
       </div>
 
       {/* Stats and Add Button */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold">All Projects</h2>
           <p className="text-sm text-muted-foreground">
@@ -310,7 +315,7 @@ export default function Projects() {
           </p>
         </div>
         <AddProjectDialog onSuccess={handleProjectAdded}>
-          <Button className="flex items-center gap-2">
+          <Button className="flex items-center gap-2 w-full sm:w-auto">
             <Plus className="w-4 h-4" />
             Add Project
           </Button>
@@ -318,70 +323,94 @@ export default function Projects() {
       </div>
 
       {/* Search and Filters */}
-      <Card className="p-6">
+      <Card className="p-4 md:p-6">
         <div className="space-y-4">
-          <div className="flex gap-4">
-            {/* Search Input */}
+          {/* Search Bar */}
+          <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
               <Input
                 placeholder="Search projects by title, location, code..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 w-full"
               />
               {searchTerm && (
-                <X
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4 cursor-pointer hover:text-foreground"
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                   onClick={() => setSearchTerm("")}
-                />
+                >
+                  <X className="w-4 h-4" />
+                </button>
               )}
             </div>
 
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="sold_out">Sold Out</SelectItem>
-                <SelectItem value="coming_soon">Coming Soon</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Property Type Filter */}
-            <Select
-              value={propertyTypeFilter}
-              onValueChange={setPropertyTypeFilter}
+            {/* Mobile Filter Toggle */}
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="sm:hidden flex items-center gap-2"
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Property Type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Types</SelectItem>
-                <SelectItem value="commercial">Commercial</SelectItem>
-                <SelectItem value="residential">Residential</SelectItem>
-                <SelectItem value="plot">Plot</SelectItem>
-                <SelectItem value="land">Land</SelectItem>
-                <SelectItem value="mixed_use">Mixed Use</SelectItem>
-              </SelectContent>
-            </Select>
+              <Filter className="w-4 h-4" />
+              Filters
+            </Button>
+          </div>
 
-            {/* Clear Filters */}
-            {(searchTerm ||
-              statusFilter !== "all" ||
-              propertyTypeFilter !== "all") && (
-              <Button
-                variant="outline"
-                onClick={clearFilters}
-                className="flex items-center gap-2"
-              >
-                <X className="w-4 h-4" />
-                Clear
-              </Button>
-            )}
+          {/* Filters - Responsive */}
+          <div
+            className={`space-y-4 ${showFilters ? "block" : "hidden sm:block"}`}
+          >
+            <div className="flex flex-col sm:flex-row gap-4">
+              {/* Status Filter */}
+              <div className="flex-1">
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="sold_out">Sold Out</SelectItem>
+                    <SelectItem value="coming_soon">Coming Soon</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Property Type Filter */}
+              <div className="flex-1">
+                <Select
+                  value={propertyTypeFilter}
+                  onValueChange={setPropertyTypeFilter}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Property Type" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50">
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                    <SelectItem value="residential">Residential</SelectItem>
+                    <SelectItem value="plot">Plot</SelectItem>
+                    <SelectItem value="land">Land</SelectItem>
+                    <SelectItem value="mixed_use">Mixed Use</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Clear Filters */}
+              {(searchTerm ||
+                statusFilter !== "all" ||
+                propertyTypeFilter !== "all") && (
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="flex items-center gap-2 w-full sm:w-auto"
+                >
+                  <X className="w-4 h-4" />
+                  Clear Filters
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </Card>
@@ -393,18 +422,18 @@ export default function Projects() {
       )}
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
         {filteredProjects.map((project) => (
           <Card
             key={project.id}
-            className="p-6 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20 group"
+            className="p-4 md:p-6 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20 group"
           >
             <div className="space-y-4">
               {/* Header with Title and Status */}
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <h3
-                    className="font-semibold text-lg leading-tight truncate group-hover:text-primary transition-colors"
+                    className="font-semibold text-base md:text-lg leading-tight truncate group-hover:text-primary transition-colors"
                     title={project.title}
                   >
                     {project.title}
@@ -512,6 +541,7 @@ export default function Projects() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewProject(project)}
+                    className="flex items-center justify-center"
                   >
                     <Eye className="w-4 h-4 mr-1" />
                     View
@@ -520,6 +550,7 @@ export default function Projects() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditProject(project)}
+                    className="flex items-center justify-center"
                   >
                     <Edit className="w-4 h-4 mr-1" />
                     Edit
@@ -545,7 +576,7 @@ export default function Projects() {
 
       {filteredProjects.length === 0 && !isLoading && (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
-          <div className="text-muted-foreground mb-4 text-lg">
+          <div className="text-muted-foreground mb-4 text-base md:text-lg">
             {projects.length === 0
               ? "No projects found"
               : "No projects match your filters"}
@@ -564,7 +595,7 @@ export default function Projects() {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md mx-auto">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-destructive">
               <AlertTriangle className="h-5 w-5" />
@@ -575,12 +606,14 @@ export default function Projects() {
               project and remove all associated data from our servers.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+            <AlertDialogCancel disabled={isDeleting} className="m-0">
+              Cancel
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
               disabled={isDeleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 m-0"
             >
               {isDeleting ? "Deleting..." : "Delete Project"}
             </AlertDialogAction>

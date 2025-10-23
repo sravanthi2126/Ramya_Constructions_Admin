@@ -1,13 +1,16 @@
 import { useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { User, LogOut, ChevronDown } from "lucide-react";
 import { AdminSidebar } from "./AdminSidebar";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function AdminLayout() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -19,23 +22,26 @@ export function AdminLayout() {
 
   const handleProfile = () => {
     setShowProfileDropdown(false);
-    // Navigate to profile page or show profile modal
     navigate("/admin/profile");
   };
 
   const handleLogout = () => {
     setShowProfileDropdown(false);
-    // Add your logout logic here
-    // For example: clear tokens, redirect to login
-    localStorage.removeItem("authToken"); // Example
-    navigate("/login");
+    logout(); // This will clear all tokens and redirect to login
   };
 
-  // Mock user data - replace with actual user data from context/store
-  const user = {
-    name: "Admin User",
-    email: "admin@example.com",
-    avatar: null, // You can add avatar URL here
+  // Get current page title based on route
+  const getPageTitle = () => {
+    const path = location.pathname;
+    if (path === "/dashboard" || path === "/") return "Dashboard";
+    if (path.includes("/projects")) return "Projects";
+    if (path.includes("/schemes")) return "Schemes";
+    if (path.includes("/users")) return "User Management";
+    if (path.includes("/admin")) return "Admin Management";
+    if (path.includes("/agents")) return "Agents";
+    if (path.includes("/contact-inquiry")) return "Contact Inquiry";
+    if (path.includes("/contact-info")) return "Contact Info";
+    return "Admin Dashboard";
   };
 
   return (
@@ -56,7 +62,7 @@ export function AdminLayout() {
           {/* Page Title - Left Side */}
           <div className="flex-1">
             <h1 className="text-xl font-semibold text-gray-900">
-              Admin Dashboard
+              {getPageTitle()}
             </h1>
           </div>
 
@@ -67,7 +73,7 @@ export function AdminLayout() {
               className="flex items-center space-x-3 p-2 rounded-full hover:bg-white/60 transition-all duration-200 hover:shadow-sm"
             >
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow duration-200">
-                {user.avatar ? (
+                {user?.avatar ? (
                   <img
                     src={user.avatar}
                     alt="Profile"
@@ -87,12 +93,12 @@ export function AdminLayout() {
 
             {/* Profile Dropdown */}
             {showProfileDropdown && (
-              <div className="absolute right-0 mt-2 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-200/50 py-2">
+              <div className="absolute right-0 mt-2 w-72 bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-200/50 py-2 z-50">
                 {/* User Info */}
                 <div className="px-5 py-4 border-b border-gray-100/60">
                   <div className="flex items-center space-x-4">
                     <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-md">
-                      {user.avatar ? (
+                      {user?.avatar ? (
                         <img
                           src={user.avatar}
                           alt="Profile"
@@ -103,8 +109,12 @@ export function AdminLayout() {
                       )}
                     </div>
                     <div>
-                      <p className="font-semibold text-gray-900">{user.name}</p>
-                      <p className="text-sm text-gray-600">{user.email}</p>
+                      <p className="font-semibold text-gray-900">
+                        {user?.name || "Admin User"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {user?.email || "admin@example.com"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -112,7 +122,7 @@ export function AdminLayout() {
                 {/* Menu Items */}
                 <div className="py-2">
                   <button
-                    // onClick={handleProfile}
+                    onClick={handleProfile}
                     className="flex items-center w-full px-5 py-3 text-sm text-gray-700 hover:bg-blue-50/70 transition-colors duration-200 group"
                   >
                     <User className="w-5 h-5 mr-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
@@ -135,7 +145,7 @@ export function AdminLayout() {
       {/* Main Content */}
       <main
         className={cn(
-          "transition-all duration-300 ease-in-out pt-16", // Added pt-16 for header space
+          "transition-all duration-300 ease-in-out pt-16",
           isCollapsed ? "ml-16" : "ml-64"
         )}
       >
