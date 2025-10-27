@@ -14,6 +14,7 @@ import NotFound from "./pages/NotFound";
 import Agents from "./pages/Agents";
 import ContactInquiry from "./pages/ContactInquiry";
 import ContactInfo from "./pages/ContactInfo";
+import Units from "./pages/Units"; // Add this import
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -60,7 +61,12 @@ const App = () => (
       <Toaster />
       <Sonner />
       <AuthProvider>
-        <BrowserRouter>
+        <BrowserRouter
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+          }}
+        >
           <Routes>
             {/* Public Routes - Only accessible when NOT authenticated */}
             <Route
@@ -85,6 +91,7 @@ const App = () => (
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="projects" element={<Projects />} />
               <Route path="schemes" element={<Schemes />} />
+              <Route path="units" element={<Units />} /> {/* Add this route */}
               <Route path="users" element={<UserManagement />} />
               <Route path="admin" element={<AdminManagement />} />
               <Route path="agents" element={<Agents />} />

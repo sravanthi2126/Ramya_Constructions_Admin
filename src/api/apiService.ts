@@ -388,6 +388,397 @@ export const schemeApi = {
     }
   },
 };
+export interface JointOwner {
+  user_profile_id: string;
+  relation: string;
+  share_percentage?: number;
+}
+
+export interface PurchasedUnit {
+  id: string;
+  unit_number: string;
+  project_id: string;
+  scheme_id: string;
+  purchaser_user_id: string;
+  user_profile_id: string | null;
+  is_joint_ownership: boolean;
+  joint_owners: JointOwner[] | null;
+  number_of_units: number;
+  total_area_sqft: number;
+  total_investment: number;
+  purchase_date: string;
+  monthly_rental: number;
+  rental_start_date: string;
+  payment_status: 'none' | 'advance_paid' | 'partially_paid' | 'fully_paid';
+  unit_status: 'none' | 'payment_ongoing' | 'completed';
+  created_at: string;
+  updated_at: string;
+  user_paid: number;
+  balance_amount: number;
+  floor_number: number;
+}
+
+export interface PurchasedUnitResponse {
+  message: string;
+  data: PurchasedUnit | PurchasedUnit[];
+}
+
+export interface CreateUnitRequest {
+  project_id: string;
+  scheme_id: string;
+  is_joint_ownership: boolean;
+  number_of_units: number;
+  purchaser_user_id?: string;
+  joint_owners?: JointOwner[];
+}
+
+
+// Constants for Purchased Units APIs
+const PURCHASED_UNIT_API_BASE_URL = 'http://127.0.0.1:8001/api/purchased-unit';
+const PURCHASED_UNIT_API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/purchased-unit';
+
+export const purchasedUnitApi = {
+  // Get purchased unit by unit number
+  async getByUnitNumber(unitNumber: string): Promise<PurchasedUnit> {
+    try {
+      const response = await fetch(`${PURCHASED_UNIT_API_BASE_URL}/by-unit-number/${unitNumber}`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          ...getAuthHeader(),
+        }
+      });
+      
+      const data: PurchasedUnitResponse = await handleResponse<PurchasedUnitResponse>(response);
+      return data.data as PurchasedUnit;
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Get purchased units by user ID
+  async getByUserId(userId: string): Promise<PurchasedUnit[]> {
+    try {
+      const response = await fetch(`${PURCHASED_UNIT_API_BASE_URL}/by-user/${userId}`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          ...getAuthHeader(),
+        }
+      });
+      
+      const data: PurchasedUnitResponse = await handleResponse<PurchasedUnitResponse>(response);
+      return data.data as PurchasedUnit[];
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Get all purchased units
+  async getAll(): Promise<PurchasedUnit[]> {
+    try {
+      const response = await fetch(`${PURCHASED_UNIT_API_BASE_URL}/all`, {
+        method: 'GET',
+        headers: {
+          'accept': 'application/json',
+          ...getAuthHeader(),
+        }
+      });
+      
+      const data: PurchasedUnitResponse = await handleResponse<PurchasedUnitResponse>(response);
+      return data.data as PurchasedUnit[];
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Create purchased unit
+  async create(data: CreateUnitRequest): Promise<ApiResponse> {
+    try {
+      const response = await fetch(`${PURCHASED_UNIT_API_BASE_URL}/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'accept': 'application/json',
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify(data)
+      });
+      
+      return handleResponse<ApiResponse>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+   // Get projects for dropdown
+  async getProjectsForDropdown(): Promise<{id: string, title: string}[]> {
+    try {
+      const response = await projectApi.getAllProjects(1, 100);
+      return response.projects.map(project => ({
+        id: project.id,
+        title: project.title
+      }));
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Get schemes for dropdown (by project ID)
+  async getSchemesForDropdown(projectId: string): Promise<{id: string, scheme_name: string}[]> {
+    try {
+      const response = await schemeApi.getAllSchemesByProject(projectId, 1, 100);
+      return response.schemes.map(scheme => ({
+        id: scheme.id,
+        scheme_name: scheme.scheme_name
+      }));
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+  
+};
+// Add to your existing apiService.ts
+// -------------------------------------------------------------------------------
+// Legal Agreements API - Updated to match your backend
+// -------------------------------------------------------------------------------
+
+export interface LegalAgreement {
+  id: string;
+  unit_id: string;
+  agreement_type: string;
+  document_name: string;
+  file_path: string;
+  signatories: string[];
+  agreement_date: string;
+  valid_until: string;
+  status: 'draft' | 'executed' | 'signed' | 'pending_signature';
+  uploaded_at: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface CreateLegalAgreementRequest {
+  unit_id: string;
+  agreement_type: string;
+  document_name: string;
+  signatories: string[];
+  agreement_date: string;
+  valid_until: string;
+  status: 'draft' | 'executed' | 'signed' | 'pending_signature';
+}
+
+export interface UpdateLegalAgreementRequest {
+  unit_id?: string;
+  agreement_type?: string;
+  document_name?: string;
+  signatories?: string[];
+  agreement_date?: string;
+  valid_until?: string;
+  status?: 'draft' | 'pending_signature' | 'signed' | 'executed';
+}
+
+export interface LegalAgreementResponse {
+  success: boolean;
+  message: string;
+  data: LegalAgreement;
+}
+
+export interface LegalAgreementListResponse {
+  success: boolean;
+  message: string;
+  total: number;
+  data: LegalAgreement[];
+  page?: number;
+  limit?: number;
+  total_pages?: number;
+}
+
+// Constants for Legal Agreements APIs
+const LEGAL_AGREEMENTS_API_BASE_URL_READ = 'http://127.0.0.1:8001/api/legal-agreements';
+const LEGAL_AGREEMENTS_API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/legal-agreements';
+
+export const legalAgreementsApi = {
+  // Get All Legal Agreements with filters (Port 8001)
+  async getAllAgreements(
+    unit_id?: string,
+    agreement_type?: string,
+    status?: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<LegalAgreementListResponse> {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      
+      if (unit_id) params.append('unit_id', unit_id);
+      if (agreement_type) params.append('agreement_type', agreement_type);
+      if (status) params.append('status', status);
+
+      const response = await fetch(
+        `${LEGAL_AGREEMENTS_API_BASE_URL_READ}/?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            ...getAuthHeader(),
+          },
+        }
+      );
+
+      return handleResponse<LegalAgreementListResponse>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Get Legal Agreements by Unit ID (Port 8001)
+  async getAgreementsByUnitId(unitId: string): Promise<LegalAgreementListResponse> {
+    try {
+      const response = await fetch(
+        `${LEGAL_AGREEMENTS_API_BASE_URL_READ}/?unit_id=${unitId}`,
+        {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            ...getAuthHeader(),
+          },
+        }
+      );
+
+      return handleResponse<LegalAgreementListResponse>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Get Legal Agreement by ID (Port 8001)
+  async getAgreementById(agreementId: string): Promise<LegalAgreementResponse> {
+    try {
+      const response = await fetch(
+        `${LEGAL_AGREEMENTS_API_BASE_URL_READ}/${agreementId}`,
+        {
+          method: 'GET',
+          headers: {
+            'accept': 'application/json',
+            ...getAuthHeader(),
+          },
+        }
+      );
+
+      return handleResponse<LegalAgreementResponse>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Create Legal Agreement (Port 8000)
+  async createAgreement(
+    agreementData: CreateLegalAgreementRequest, 
+    file: File
+  ): Promise<LegalAgreementResponse> {
+    try {
+      const formData = new FormData();
+      
+      // Append the agreement data as JSON
+      formData.append("agreement", JSON.stringify(agreementData));
+      
+      // Append the file
+      formData.append("file", file);
+
+      const response = await fetch(`${LEGAL_AGREEMENTS_API_BASE_URL_WRITE}/create`, {
+        method: "POST",
+        headers: {
+          ...getAuthHeader(),
+          // Don't set Content-Type for FormData - browser will set it with boundary
+        },
+        body: formData,
+      });
+
+      return handleResponse<LegalAgreementResponse>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Update Legal Agreement (Port 8000)
+  async updateAgreement(
+    agreementId: string,
+    agreementData: UpdateLegalAgreementRequest,
+    file?: File
+  ): Promise<LegalAgreementResponse> {
+    try {
+      const formData = new FormData();
+      
+      // Append the agreement data as JSON
+      formData.append("request", JSON.stringify(agreementData));
+      
+      // Append the file if provided
+      if (file) {
+        formData.append("file", file);
+      }
+
+      const response = await fetch(
+        `${LEGAL_AGREEMENTS_API_BASE_URL_WRITE}/${agreementId}`,
+        {
+          method: "PUT",
+          headers: {
+            ...getAuthHeader(),
+          },
+          body: formData,
+        }
+      );
+
+      return handleResponse<LegalAgreementResponse>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Delete Legal Agreement (Port 8000)
+  async deleteAgreement(agreementId: string): Promise<LegalAgreementResponse> {
+    try {
+      const response = await fetch(
+        `${LEGAL_AGREEMENTS_API_BASE_URL_WRITE}/${agreementId}`,
+        {
+          method: "DELETE",
+          headers: {
+            'accept': 'application/json',
+            ...getAuthHeader(),
+          },
+        }
+      );
+
+      return handleResponse<LegalAgreementResponse>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Download Agreement File (Port 8001)
+  async downloadAgreement(filePath: string): Promise<Blob> {
+    try {
+      const response = await fetch(
+        `${LEGAL_AGREEMENTS_API_BASE_URL_READ}/download/${encodeURIComponent(filePath)}`,
+        {
+          method: "GET",
+          headers: getAuthHeader(),
+        }
+      );
+
+      if (!response.ok) {
+        throw new ApiError(response.status, "Failed to download file");
+      }
+
+      return await response.blob();
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+};
+
+
 
 // -------------------------------------------------------------------------------
 // Project-related code
@@ -523,6 +914,7 @@ export interface UpdateProjectRequest {
   building_permission?: string;
   is_active?: boolean;
 }
+
 
 const PROJECT_API_BASE_URL_READ = 'http://127.0.0.1:8001/api/projects';
 const PROJECT_API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/projects';
@@ -721,5 +1113,6 @@ export const projectApi = {
     }
   },
 };
+
 
 export { ApiError };

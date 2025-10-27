@@ -1,8 +1,8 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Building2, 
-  TrendingUp, 
+import { NavLink, useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Building2,
+  TrendingUp,
   Users,
   Settings,
   LogOut,
@@ -10,10 +10,11 @@ import {
   ChevronLeft,
   UserCircle,
   Mail,
-  Phone // ✅ Added Phone icon for Contact Info
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+  Home,
+  Phone, // ✅ Added Phone icon for Contact Info
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -21,26 +22,27 @@ interface SidebarProps {
 }
 
 const navigation = [
-  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Schemes', href: '/schemes', icon: TrendingUp },
-  { name: 'Projects', href: '/projects', icon: Building2 },
-  { name: 'Agents', href: '/agents', icon: UserCircle },
-  { name: 'Contact Inquiry', href: '/contact-inquiry', icon: Mail },
-  { name: 'Contact Info', href: '/contact-info', icon: Phone }, // ✅ Added this line
-  { name: 'User Management', href: '/users', icon: Users },
-  { name: 'Admin Management', href: '/admin', icon: Settings },
+  { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Schemes", href: "/schemes", icon: TrendingUp },
+  { name: "Projects", href: "/projects", icon: Building2 },
+  { name: "Agents", href: "/agents", icon: UserCircle },
+  { name: "Contact Inquiry", href: "/contact-inquiry", icon: Mail },
+  { name: "Contact Info", href: "/contact-info", icon: Phone }, // ✅ Added this line
+  { name: "Units", href: "/units", icon: Home },
+  { name: "User Management", href: "/users", icon: Users },
+  { name: "Admin Management", href: "/admin", icon: Settings },
 ];
 
 export function AdminSidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('admin_token');
-    navigate('/login');
+    localStorage.removeItem("admin_token");
+    navigate("/login");
   };
 
   return (
-    <div 
+    <div
       className={cn(
         "fixed left-0 top-0 z-50 h-full bg-gradient-to-b from-teal-50 to-teal-100 border-r border-teal-200 shadow-md transition-all duration-300 ease-in-out",
         isCollapsed ? "w-20" : "w-64"
@@ -54,8 +56,12 @@ export function AdminSidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
               <Building2 className="w-6 h-6 text-white" />
             </div>
             <div className="flex flex-col">
-              <span className="text-gray-800 font-bold text-lg whitespace-nowrap">Ramya-Admin</span>
-              <span className="text-sm text-gray-600 whitespace-nowrap">Constructions Panel</span>
+              <span className="text-gray-800 font-bold text-lg whitespace-nowrap">
+                Ramya-Admin
+              </span>
+              <span className="text-sm text-gray-600 whitespace-nowrap">
+                Constructions Panel
+              </span>
             </div>
           </div>
         )}
@@ -65,7 +71,11 @@ export function AdminSidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
           onClick={onToggleCollapse}
           className="text-gray-600 hover:text-teal-300 hover:bg-teal-50 rounded-full p-2 transition-colors duration-200"
         >
-          {isCollapsed ? <Menu className="w-8 h-8" /> : <ChevronLeft className="w-8 h-8" />}
+          {isCollapsed ? (
+            <Menu className="w-8 h-8" />
+          ) : (
+            <ChevronLeft className="w-8 h-8" />
+          )}
         </Button>
       </div>
 
@@ -79,8 +89,10 @@ export function AdminSidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
               className={({ isActive }) =>
                 cn(
                   "flex items-center px-3 py-2.5 text-base font-medium rounded-xl transition-colors duration-200",
-                  !isCollapsed && "text-gray-700 hover:bg-teal-50 hover:text-teal-400",
-                  isActive && "bg-teal-400/10 text-teal-500 shadow-md border-l-4 border-teal-400",
+                  !isCollapsed &&
+                    "text-gray-700 hover:bg-teal-50 hover:text-teal-400",
+                  isActive &&
+                    "bg-teal-400/10 text-teal-500 shadow-md border-l-4 border-teal-400",
                   isCollapsed && "justify-center"
                 )
               }
@@ -104,7 +116,8 @@ export function AdminSidebar({ isCollapsed, onToggleCollapse }: SidebarProps) {
             onClick={handleLogout}
             className={cn(
               "w-full text-gray-700 transition-colors duration-200",
-              !isCollapsed && "hover:bg-red-200/20 hover:text-red-500 rounded-xl py-2.5",
+              !isCollapsed &&
+                "hover:bg-red-200/20 hover:text-red-500 rounded-xl py-2.5",
               isCollapsed && "px-0"
             )}
           >

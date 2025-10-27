@@ -93,3 +93,34 @@ export interface DashboardStats {
   monthlyGrowth: number;
   userGrowth: number;
 }
+
+
+export interface JointOwner {
+  user_profile_id: string;
+  relation: string;
+  share_percentage?: number;
+}
+
+export interface PurchasedUnit {
+  id: string;
+  unit_number: string;
+  project_id: string;
+  scheme_id: string;
+  purchaser_user_id: string;
+  user_profile_id: string | null;
+  is_joint_ownership: boolean;
+  joint_owners: JointOwner[] | null;
+  number_of_units: number;
+  total_area_sqft: number;
+  total_investment: number;
+  purchase_date: string;
+  monthly_rental: number;
+  rental_start_date: string;
+  payment_status: 'none' | 'advance_paid' | 'partially_paid' | 'fully_paid';
+  unit_status: 'none' | 'payment_ongoing' | 'completed';
+  created_at: string;
+  updated_at: string;
+  user_paid: number;
+  balance_amount: number;
+  floor_number: number;
+}

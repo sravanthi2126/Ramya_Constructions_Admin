@@ -211,14 +211,6 @@ export function AddProjectDialog({
           <DialogTitle className="text-xl md:text-2xl font-bold text-gray-900">
             Add New Project
           </DialogTitle>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsOpen(false)}
-            className="h-8 w-8 rounded-full hover:bg-gray-100"
-          >
-            <X className="h-4 w-4" />
-          </Button>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-2">
