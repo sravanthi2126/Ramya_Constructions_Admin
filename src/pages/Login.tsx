@@ -1,28 +1,33 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Building2, Lock, User } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Building2, Lock, User, Eye, EyeOff } from "lucide-react"; // Add Eye and EyeOff icons
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
+  const { login } = useAuth();
   const { toast } = useToast();
+  const [showPassword, setShowPassword] = useState(false); // Add this state
+  // Add this function to toggle password visibility
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/admins/login', {
-        method: 'POST',
+      const response = await fetch("http://127.0.0.1:8000/api/admins/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
@@ -33,33 +38,33 @@ export default function Login() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Store the access token and user data
-        localStorage.setItem('admin_token', data.data.access_token);
-        localStorage.setItem('admin_user', JSON.stringify({
+        // Use the auth context to store tokens and user data
+        login(data.data.access_token, {
           id: data.data.id,
           name: data.data.name,
           email: data.data.email,
-        }));
+        });
 
         toast({
-          title: 'Login successful',
+          title: "Login successful",
           description: `Welcome ${data.data.name}!`,
         });
-        
-        navigate('/admin-management'); // Adjust to your route
+
+        // Navigation is handled automatically by the AuthContext
       } else {
         toast({
-          title: 'Login failed',
-          description: data.detail || 'Invalid credentials. Please try again.',
-          variant: 'destructive',
+          title: "Login failed",
+          description: data.detail || "Invalid credentials. Please try again.",
+          variant: "destructive",
         });
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error("Login error:", error);
       toast({
-        title: 'Login failed',
-        description: 'Network error. Please check your connection and try again.',
-        variant: 'destructive',
+        title: "Login failed",
+        description:
+          "Network error. Please check your connection and try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -104,22 +109,30 @@ export default function Login() {
               <Lock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10"
+                className="pl-10 pr-10"
                 placeholder="Enter your password"
                 required
               />
+              {/* Eye toggle button */}
+              <button
+                type="button"
+                className="absolute right-3 top-3 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={togglePasswordVisibility}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
+              </button>
             </div>
           </div>
 
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? "Signing in..." : "Sign In"}
           </Button>
         </form>
 
