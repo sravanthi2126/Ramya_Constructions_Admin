@@ -65,7 +65,7 @@ function EditSchemeDialog({
     "single_payment" | "installment"
   >(scheme.scheme_type);
   const { toast } = useToast();
-  const { register, handleSubmit, reset, setValue } =
+  const { register, handleSubmit, reset, setValue, watch } =
     useForm<EditSchemeFormData>({
       defaultValues: {
         scheme_type: scheme.scheme_type,
@@ -82,6 +82,8 @@ function EditSchemeDialog({
         is_active: scheme.is_active ?? true,
       },
     });
+
+  const isActive = watch("is_active");
 
   useEffect(() => {
     if (isOpen) {
@@ -149,7 +151,7 @@ function EditSchemeDialog({
       </Button>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-4 border-b">
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
             Edit Investment Scheme
           </DialogTitle>
         </DialogHeader>
@@ -157,7 +159,7 @@ function EditSchemeDialog({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 py-4">
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+              <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-blue-700 rounded-full"></div>
               <h3 className="text-lg font-semibold text-gray-800">
                 Basic Information
               </h3>
@@ -177,7 +179,7 @@ function EditSchemeDialog({
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-8 w-1 bg-gradient-to-b from-purple-500 to-pink-500 rounded-full"></div>
+              <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-blue-700 rounded-full"></div>
               <h3 className="text-lg font-semibold text-gray-800">
                 Scheme Details
               </h3>
@@ -222,8 +224,8 @@ function EditSchemeDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2">
-              <div className="space-y-2 md:pr-4 md:border-r md:border-gray-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label
                   htmlFor="booking_advance"
                   className="text-sm font-medium"
@@ -239,7 +241,7 @@ function EditSchemeDialog({
                 />
               </div>
 
-              <div className="space-y-2 md:pl-4">
+              <div className="space-y-2">
                 <Label
                   htmlFor="rental_start_month"
                   className="text-sm font-medium"
@@ -274,7 +276,7 @@ function EditSchemeDialog({
             )}
 
             {schemeType === "installment" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-purple-50 p-4 rounded-lg border border-purple-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <div className="space-y-2">
                   <Label
                     htmlFor="total_installments"
@@ -312,7 +314,7 @@ function EditSchemeDialog({
 
           <div className="space-y-4">
             <div className="flex items-center gap-2 mb-3">
-              <div className="h-8 w-1 bg-gradient-to-b from-green-500 to-teal-500 rounded-full"></div>
+              <div className="h-8 w-1 bg-gradient-to-b from-blue-500 to-blue-700 rounded-full"></div>
               <h3 className="text-lg font-semibold text-gray-800">
                 Dates & Status
               </h3>
@@ -344,10 +346,14 @@ function EditSchemeDialog({
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 bg-green-50 p-4 rounded-lg border border-green-200">
-              <Switch id="is_active" {...register("is_active")} />
+            <div className="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <Switch 
+                id="is_active" 
+                checked={isActive}
+                onCheckedChange={(checked) => setValue("is_active", checked)}
+              />
               <Label htmlFor="is_active" className="font-medium cursor-pointer">
-                Active Status
+                {isActive ? "Active" : "Inactive"} Status
               </Label>
             </div>
           </div>
@@ -363,7 +369,7 @@ function EditSchemeDialog({
             </Button>
             <Button
               type="submit"
-              className="px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              className="px-6 bg-blue-600 hover:bg-blue-700 text-white"
             >
               Update Scheme
             </Button>
@@ -430,8 +436,8 @@ export default function Schemes() {
 
   const getStatusColor = (isActive?: boolean) => {
     return isActive ?? true
-      ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-sm"
-      : "bg-gradient-to-r from-gray-400 to-gray-500 text-white shadow-sm";
+      ? "bg-green-500 text-white"
+      : "bg-gray-400 text-white";
   };
 
   const formatPrice = (price: number | null | undefined) => {
@@ -463,16 +469,16 @@ export default function Schemes() {
   }
 
   return (
-    <div className="space-y-6 p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+    <div className="space-y-6 p-4 bg-gray-50 min-h-screen">
       {/* Header Section */}
-      <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
+      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-sm">
+              <div className="p-2 bg-blue-600 rounded-lg shadow-sm">
                 <Building2 className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold text-gray-900">
                 Investment Schemes
               </h1>
             </div>
@@ -483,10 +489,10 @@ export default function Schemes() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+      <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full lg:w-auto">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-100">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-auto">
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <TrendingUp className="w-5 h-5 text-blue-600" />
@@ -502,7 +508,7 @@ export default function Schemes() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-100">
+            <div className="bg-green-50 rounded-lg p-4 border border-green-200">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-white rounded-lg shadow-sm">
                   <CreditCard className="w-5 h-5 text-green-600" />
@@ -526,25 +532,27 @@ export default function Schemes() {
       </div>
 
       {/* Schemes Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {schemes.map((scheme) => (
           <Card
             key={scheme.id}
-            className="group relative overflow-hidden bg-white hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-blue-200 rounded-xl"
+            className="group relative overflow-hidden bg-white hover:shadow-md transition-all duration-300 border border-gray-200 hover:border-blue-300 rounded-lg"
           >
-            {/* Decorative gradient bar */}
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+            {/* Status indicator bar */}
+            <div className={`absolute top-0 left-0 right-0 h-1 ${scheme.is_active ?? true ? 'bg-green-500' : 'bg-gray-400'}`}></div>
 
             <div className="p-4 space-y-3">
               {/* Header */}
               <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="font-bold text-lg text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-bold text-gray-900 mb-1 truncate group-hover:text-blue-600 transition-colors">
                     {scheme.scheme_name}
                   </h3>
                   <div className="flex items-center text-xs text-gray-600 bg-gray-50 px-2 py-1 rounded-md w-fit">
                     <MapPin className="w-3.5 h-3.5 mr-1" />
-                    {projectMap[scheme.project_id] || scheme.project_id}
+                    <span className="truncate">
+                      {projectMap[scheme.project_id] || scheme.project_id}
+                    </span>
                   </div>
                 </div>
                 <Badge
@@ -552,7 +560,7 @@ export default function Schemes() {
                     scheme.is_active
                   )} px-2 py-0.5 rounded-md font-medium text-xs`}
                 >
-                  {scheme.is_active ?? true ? "✓ Active" : "✕ Inactive"}
+                  {scheme.is_active ?? true ? "Active" : "Inactive"}
                 </Badge>
               </div>
 
@@ -560,7 +568,7 @@ export default function Schemes() {
               <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
-                  className="capitalize px-3 py-1 text-xs font-medium bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200 text-purple-700"
+                  className="capitalize px-3 py-1 text-xs font-medium bg-blue-50 border-blue-200 text-blue-700"
                 >
                   {scheme.scheme_type === "single_payment"
                     ? "💰 Single Payment"
@@ -569,7 +577,7 @@ export default function Schemes() {
               </div>
 
               {/* Details Grid */}
-              <div className="space-y-2 bg-gradient-to-br from-gray-50 to-blue-50 p-3 rounded-lg border border-gray-100">
+              <div className="space-y-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
                 <div className="flex items-center justify-between py-1.5 border-b border-gray-200">
                   <span className="text-xs text-gray-600 font-medium">
                     Area
@@ -595,7 +603,7 @@ export default function Schemes() {
                       <span className="text-xs text-gray-600 font-medium">
                         Installments
                       </span>
-                      <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 text-xs">
+                      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 text-xs">
                         {scheme.total_installments ?? "N/A"} months
                       </Badge>
                     </div>
@@ -614,7 +622,7 @@ export default function Schemes() {
                   <span className="text-xs text-gray-600 font-medium">
                     Rental Starts
                   </span>
-                  <Badge className="bg-teal-100 text-teal-700 text-xs">
+                  <Badge className="bg-gray-100 text-gray-700 text-xs">
                     Month {scheme.rental_start_month}
                   </Badge>
                 </div>
@@ -628,7 +636,7 @@ export default function Schemes() {
                 </div>
                 {scheme.end_date && (
                   <div className="flex items-center text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
-                    <Calendar className="w-3.5 h-3.5 mr-1 text-purple-500" />
+                    <Calendar className="w-3.5 h-3.5 mr-1 text-gray-500" />
                     {formatDate(scheme.end_date)}
                   </div>
                 )}
@@ -652,7 +660,7 @@ export default function Schemes() {
       </div>
 
       {schemes.length === 0 && (
-        <div className="text-center py-12 bg-white rounded-xl shadow-md border border-gray-100">
+        <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-3 bg-gray-100 rounded-full w-12 h-12 mx-auto mb-3 flex items-center justify-center">
             <Building2 className="w-6 h-6 text-gray-400" />
           </div>

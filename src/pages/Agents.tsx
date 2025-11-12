@@ -17,146 +17,28 @@ const AgentsManagement = () => {
   const [error, setError] = useState("");
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  // Toast notification state
+  /* ─────────────────────── Toast ─────────────────────── */
   const [toast, setToast] = useState({
     show: false,
     message: "",
-    type: "success", // 'success', 'error', 'warning'
+    type: "success", // 'success' | 'error' | 'warning'
   });
 
-  // Show toast function
   const showToast = (message, type = "success") => {
-    setToast({
-      show: true,
-      message,
-      type,
-    });
-    setTimeout(() => {
-      setToast({ show: false, message: "", type: "success" });
-    }, 4000);
-  };
-
-  // Fetch all agents (GET on port 8001)
-  const fetchAgents = async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch("http://127.0.0.1:8001/api/agents/all");
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to fetch agents: ${response.status} ${response.statusText} - ${errorText}`
-        );
-      }
-      const data = await response.json();
-      setAgents(data.agents || []);
-    } catch (err) {
-      setError(err.message);
-      console.error("Error fetching agents:", err);
-      showToast("Failed to load agents", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch agent details (GET on port 8001)
-  const fetchAgentDetails = async (agentId) => {
-    setDetailsLoading(true);
-    setError("");
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8001/api/agents/${agentId}`
-      );
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to fetch agent details: ${response.status} ${response.statusText} - ${errorText}`
-        );
-      }
-      const data = await response.json();
-      setSelectedAgent(data);
-      setIsDetailsOpen(true);
-      showToast("Agent details loaded successfully", "success");
-    } catch (err) {
-      console.error("Error fetching agent details:", err);
-      setError(err.message);
-      showToast("Failed to load agent details", "error");
-    } finally {
-      setDetailsLoading(false);
-    }
-  };
-
-  // Update agent status (PUT on port 8000)
-  const updateAgentStatus = async (agentId, newStatus) => {
-    setLoading(true);
-    setError("");
-    try {
-      const response = await fetch(
-        `http://127.0.0.1:8000/api/agents/update-status/${agentId}`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: new URLSearchParams({ status: newStatus }).toString(),
-        }
-      );
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to update status: ${response.status} ${response.statusText} - ${errorText}`
-        );
-      }
-      await response.json();
-      showToast(`Agent ${newStatus} successfully!`, "success");
-
-      // Close the details modal and refresh agents list
-      setIsDetailsOpen(false);
-      setSelectedAgent(null);
-      fetchAgents();
-    } catch (err) {
-      setError(err.message);
-      console.error("Error updating status:", err);
-      showToast("Failed to update agent status", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "verified":
-      case "approved":
-        return "bg-[#E8F5E9] text-[#2E7D32]";
-      case "pending":
-        return "bg-[#FFF3E0] text-[#E65100]";
-      case "rejected":
-        return "bg-[#FFEBEE] text-[#C62828]";
-      default:
-        return "bg-[#F5F5F5] text-[#424242]";
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "verified":
-      case "approved":
-        return <CheckCircle className="w-4 h-4" />;
-      case "rejected":
-        return <XCircle className="w-4 h-4" />;
-      default:
-        return <AlertCircle className="w-4 h-4" />;
-    }
+    setToast({ show: true, message, type });
+    setTimeout(() => setToast({ show: false, message: "", type: "success" }), 4000);
   };
 
   const getToastStyles = () => {
     switch (toast.type) {
       case "success":
-        return "bg-white border-l-[#4CAF50] text-gray-900";
+        return "bg-white border-l-4 border-[#4CAF50] text-gray-900";
       case "error":
-        return "bg-white border-l-[#F44336] text-gray-900";
+        return "bg-white border-l-4 border-[#F44336] text-gray-900";
       case "warning":
-        return "bg-white border-l-[#FF9800] text-gray-900";
+        return "bg-white border-l-4 border-[#FF9800] text-gray-900";
       default:
-        return "bg-white border-l-[#2196F3] text-gray-900";
+        return "bg-white border-l-4 border-[#2196F3] text-gray-900";
     }
   };
 
@@ -173,118 +55,142 @@ const AgentsManagement = () => {
     }
   };
 
-  // Helper function to get documents from agent data
-  const getAgentDocuments = (agent) => {
-    console.log("Agent data for documents:", agent);
+  /* ─────────────────────── API Calls ─────────────────────── */
+  const fetchAgents = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("http://127.0.0.1:8001/api/agents/all");
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      const { agents: list } = await res.json();
+      setAgents(list || []);
+    } catch (e) {
+      setError(e.message);
+      showToast("Failed to load agents", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const fetchAgentDetails = async (agentId) => {
+    setDetailsLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`http://127.0.0.1:8001/api/agents/${agentId}`);
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      const data = await res.json();
+      setSelectedAgent(data);
+      setIsDetailsOpen(true);
+      showToast("Agent details loaded", "success");
+    } catch (e) {
+      setError(e.message);
+      showToast("Failed to load details", "error");
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const updateAgentStatus = async (agentId, newStatus) => {
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/api/agents/update-status/${agentId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ status: newStatus }).toString(),
+        }
+      );
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      showToast(`Agent ${newStatus} successfully!`, "success");
+      setIsDetailsOpen(false);
+      setSelectedAgent(null);
+      fetchAgents();
+    } catch (e) {
+      setError(e.message);
+      showToast("Failed to update status", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* ─────────────────────── Helpers ─────────────────────── */
+  const getStatusColor = (s) => {
+    switch (s) {
+      case "verified":
+      case "approved":
+        return "bg-[#E8F5E9] text-[#2E7D32]";
+      case "pending":
+        return "bg-[#FFF3E0] text-[#E65100]";
+      case "rejected":
+        return "bg-[#FFEBEE] text-[#C62828]";
+      default:
+        return "bg-[#F5F5F5] text-[#424242]";
+    }
+  };
+
+  const getStatusIcon = (s) => {
+    switch (s) {
+      case "verified":
+      case "approved":
+        return <CheckCircle className="w-4 h-4" />;
+      case "rejected":
+        return <XCircle className="w-4 h-4" />;
+      default:
+        return <AlertCircle className="w-4 h-4" />;
+    }
+  };
+
+  const getAgentDocuments = (agent) => {
     if (!agent) return [];
 
     if (agent.agent_documents) {
-      console.log("Found agent_documents:", agent.agent_documents);
-
-      if (Array.isArray(agent.agent_documents)) {
-        return agent.agent_documents;
-      } else if (typeof agent.agent_documents === "string") {
-        try {
-          const parsedDocs = JSON.parse(agent.agent_documents);
-          console.log("Parsed agent_documents:", parsedDocs);
-          return Array.isArray(parsedDocs) ? parsedDocs : [];
-        } catch (e) {
-          console.error("Error parsing agent_documents JSON:", e);
-          return [];
-        }
-      }
+      const docs = Array.isArray(agent.agent_documents)
+        ? agent.agent_documents
+        : typeof agent.agent_documents === "string"
+        ? JSON.parse(agent.agent_documents)
+        : [];
+      if (Array.isArray(docs)) return docs;
     }
 
-    if (agent.documents && Array.isArray(agent.documents)) {
-      console.log("Found documents:", agent.documents);
-      return agent.documents;
-    }
+    if (Array.isArray(agent.documents)) return agent.documents;
+    if (Array.isArray(agent.files)) return agent.files;
 
-    if (agent.files && Array.isArray(agent.files)) {
-      console.log("Found files:", agent.files);
-      return agent.files;
-    }
-
-    const individualDocs = [];
-    if (agent.rera_certificate) {
-      individualDocs.push({
-        file_name: "RERA Certificate",
-        file_path: agent.rera_certificate,
-        type: "rera_certificate",
-      });
-    }
-    if (agent.pan_card) {
-      individualDocs.push({
-        file_name: "PAN Card",
-        file_path: agent.pan_card,
-        type: "pan_card",
-      });
-    }
-    if (agent.aadhar_card) {
-      individualDocs.push({
-        file_name: "Aadhar Card",
-        file_path: agent.aadhar_card,
-        type: "aadhar_card",
-      });
-    }
-    if (agent.resume_cv) {
-      individualDocs.push({
-        file_name: "Resume/CV",
-        file_path: agent.resume_cv,
-        type: "resume_cv",
-      });
-    }
-
-    if (individualDocs.length > 0) {
-      console.log("Found individual documents:", individualDocs);
-      return individualDocs;
-    }
-
-    console.log("No documents found in any field");
-    return [];
+    const list = [];
+    if (agent.rera_certificate)
+      list.push({ file_name: "RERA Certificate", file_path: agent.rera_certificate, type: "rera" });
+    if (agent.pan_card)
+      list.push({ file_name: "PAN Card", file_path: agent.pan_card, type: "pan" });
+    if (agent.aadhar_card)
+      list.push({ file_name: "Aadhar Card", file_path: agent.aadhar_card, type: "aadhar" });
+    if (agent.resume_cv)
+      list.push({ file_name: "Resume/CV", file_path: agent.resume_cv, type: "resume" });
+    return list;
   };
 
-  // Helper function to get document display name
-  const getDocumentDisplayName = (doc) => {
-    if (doc.file_name) return doc.file_name;
-    if (doc.name) return doc.name;
-    if (doc.original_name) return doc.original_name;
-    if (doc.file_path) {
-      return doc.file_path.split("/").pop() || "Document";
-    }
-    return "Document";
-  };
+  const getDocumentDisplayName = (doc) =>
+    doc.file_name ?? doc.name ?? doc.original_name ?? doc.file_path?.split("/").pop() ?? "Document";
 
-  // Helper function to get document URL
-  const getDocumentUrl = (doc) => {
-    if (doc.file_path) return doc.file_path;
-    if (doc.url) return doc.url;
-    if (doc.download_url) return doc.download_url;
-    return "#";
-  };
+  const getDocumentUrl = (doc) => doc.file_path ?? doc.url ?? doc.download_url ?? "#";
 
   useEffect(() => {
     fetchAgents();
   }, []);
 
+  /* ─────────────────────── UI ─────────────────────── */
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#F8F9FA" }}>
-      {/* Toast Notification */}
+    <div className="min-h-screen bg-[#F8F9FA]">
+      {/* ───── Toast (Bottom-Right) ───── */}
       {toast.show && (
         <div
-          className={`fixed top-4 right-4 z-[100] max-w-sm w-full rounded-lg shadow-lg border-l-4 ${getToastStyles()} transform transition-all duration-300 ease-in-out`}
+          className={`fixed bottom-6 right-6 z-[100] max-w-sm w-full rounded-lg shadow-lg ${getToastStyles()} animate-slideIn`}
         >
           <div className="p-4 flex items-start gap-3">
-            <div className="flex-shrink-0">{getToastIcon()}</div>
-            <div className="flex-1">
-              <p className="font-medium">{toast.message}</p>
-            </div>
+            {getToastIcon()}
+            <p className="font-medium">{toast.message}</p>
             <button
-              onClick={() =>
-                setToast({ show: false, message: "", type: "success" })
-              }
-              className="flex-shrink-0 text-gray-500 hover:bg-gray-100 rounded-full p-1 transition-colors"
+              onClick={() => setToast({ show: false, message: "", type: "success" })}
+              className="ml-auto text-gray-500 hover:bg-gray-100 rounded-full p-1"
             >
               <X className="w-4 h-4" />
             </button>
@@ -292,148 +198,83 @@ const AgentsManagement = () => {
         </div>
       )}
 
-      {/* Header */}
-      <div style={{ backgroundColor: "#1DB584" }} className="shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white">
-                Agents Management
-              </h1>
-              <p className="text-white mt-1 opacity-90">
-                Manage and monitor all real estate agents
-              </p>
-            </div>
+      {/* ───── Header ───── */}
+      <header className="bg-[#1DB584] shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">Agents Management</h1>
+            <p className="text-white/90 mt-1">Manage and monitor all real estate agents</p>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+      {/* ───── Main Content ───── */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-8 space-y-6">
         {error && (
-          <div
-            className="bg-white border-l-4"
-            style={{ borderColor: "#C62828" }}
-          >
-            <div className="p-4 flex items-center gap-3">
-              <AlertCircle className="w-5 h-5" style={{ color: "#C62828" }} />
-              <p style={{ color: "#C62828" }}>{error}</p>
-            </div>
+          <div className="bg-white border-l-4 border-[#C62828] p-4 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-[#C62828]" />
+            <p className="text-[#C62828]">{error}</p>
           </div>
         )}
 
-        {/* Agents List */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-          <div
-            style={{ backgroundColor: "#1DB584" }}
-            className="px-4 sm:px-6 py-4"
-          >
-            <h2 className="text-lg font-semibold text-white">
-              All Agents ({agents.length})
-            </h2>
+        {/* ───── Agents Table ───── */}
+        <section className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-[#1DB584] px-4 sm:px-6 py-4">
+            <h2 className="text-lg font-semibold text-white">All Agents ({agents.length})</h2>
           </div>
 
           {loading && agents.length === 0 ? (
             <div className="flex justify-center items-center py-16">
               <div className="text-center">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
-                  style={{ backgroundColor: "#1DB584" }}
-                >
-                  <div
-                    className="w-8 h-8 border-2 border-transparent rounded-full animate-spin"
-                    style={{ borderTopColor: "white" }}
-                  ></div>
+                <div className="w-12 h-12 rounded-full bg-[#1DB584] flex items-center justify-center mx-auto mb-4 animate-spin">
+                  <div className="w-8 h-8 border-2 border-transparent rounded-full border-t-white"></div>
                 </div>
-                <p className="text-gray-500">Loading agents...</p>
+                <p className="text-gray-500">Loading agents…</p>
               </div>
             </div>
           ) : agents.length === 0 ? (
-            <div className="p-12 text-center">
-              <p className="text-gray-500 text-lg">No agents found.</p>
-            </div>
+            <p className="p-12 text-center text-gray-500 text-lg">No agents found.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-max">
-                <thead
-                  style={{ backgroundColor: "#F5F5F5" }}
-                  className="border-b border-gray-200"
-                >
+                <thead className="bg-[#F5F5F5] border-b border-gray-200">
                   <tr>
-                    <th className="px-4 sm:px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Name
-                    </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Contact
-                    </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Specialization
-                    </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Commission
-                    </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Status
-                    </th>
-                    <th className="px-4 sm:px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                      Action
-                    </th>
+                    {["Name", "Contact", "Specialization", "Commission", "Status", "Action"].map((h) => (
+                      <th key={h} className="px-4 sm:px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                        {h}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {agents.map((agent) => (
-                    <tr
-                      key={agent.id}
-                      style={{ backgroundColor: "white" }}
-                      className="border-b border-gray-100"
-                    >
+                  {agents.map((a) => (
+                    <tr key={a.id} className="bg-white hover:bg-gray-50 transition-colors">
                       <td className="px-4 sm:px-6 py-4">
-                        <div>
-                          <p className="font-semibold text-gray-900">
-                            {agent.first_name} {agent.last_name}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {agent.rera_id}
-                          </p>
-                        </div>
+                        <p className="font-semibold text-gray-900">
+                          {a.first_name} {a.last_name}
+                        </p>
+                        <p className="text-sm text-gray-500">{a.rera_id}</p>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-sm">
+                        <p className="text-gray-900">{a.email}</p>
+                        <p className="text-gray-500">{a.phone}</p>
                       </td>
                       <td className="px-4 sm:px-6 py-4">
-                        <div className="text-sm">
-                          <p className="text-gray-900">{agent.email}</p>
-                          <p className="text-gray-500">{agent.phone}</p>
-                        </div>
-                      </td>
-                      <td className="px-4 sm:px-6 py-4">
-                        <span
-                          className="inline-block px-3 py-1 rounded text-sm font-medium"
-                          style={{
-                            backgroundColor: "#E0F2F1",
-                            color: "#00695C",
-                          }}
-                        >
-                          {agent.specialization}
+                        <span className="inline-block px-3 py-1 rounded text-sm font-medium bg-[#E0F2F1] text-[#00695C]">
+                          {a.specialization}
                         </span>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 text-gray-900 font-medium">
-                        {agent.commission_rate}%
-                      </td>
+                      <td className="px-4 sm:px-6 py-4 font-medium text-gray-900">{a.commission_rate}%</td>
                       <td className="px-4 sm:px-6 py-4">
-                        <div
-                          className={`flex items-center gap-2 px-3 py-1 rounded w-fit ${getStatusColor(
-                            agent.status
-                          )}`}
-                        >
-                          {getStatusIcon(agent.status)}
-                          <span className="text-sm font-medium capitalize">
-                            {agent.status}
-                          </span>
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded w-fit ${getStatusColor(a.status)}`}>
+                          {getStatusIcon(a.status)}
+                          <span className="text-sm font-medium capitalize">{a.status}</span>
                         </div>
                       </td>
                       <td className="px-4 sm:px-6 py-4">
                         <button
-                          onClick={() => fetchAgentDetails(agent.id)}
-                          style={{ color: "#1DB584" }}
-                          className="flex items-center gap-2 font-medium hover:underline"
+                          onClick={() => fetchAgentDetails(a.id)}
+                          className="flex items-center gap-2 font-medium text-[#1DB584] hover:underline"
                         >
                           <Eye className="w-4 h-4" />
                           View
@@ -445,24 +286,22 @@ const AgentsManagement = () => {
               </table>
             </div>
           )}
-        </div>
-      </div>
+        </section>
+      </main>
 
-      {/* Agent Details Modal */}
+      {/* ───── Agent Details Modal (Centered) ───── */}
       {isDetailsOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div
-              style={{ backgroundColor: "#1DB584" }}
-              className="px-6 py-4 flex justify-between items-center"
-            >
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            {/* Modal Header */}
+            <div className="bg-[#1DB584] px-6 py-4 flex justify-between items-center">
               <h3 className="text-xl font-bold text-white">Agent Details</h3>
               <button
                 onClick={() => {
                   setIsDetailsOpen(false);
                   setSelectedAgent(null);
                 }}
-                className="text-white text-2xl leading-none hover:bg-white hover:bg-opacity-20 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
+                className="text-white hover:bg-white/20 rounded-full w-8 h-8 flex items-center justify-center transition-colors"
               >
                 ✕
               </button>
@@ -471,176 +310,108 @@ const AgentsManagement = () => {
             {detailsLoading ? (
               <div className="flex justify-center items-center py-16">
                 <div className="text-center">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center mx-auto mb-3"
-                    style={{ backgroundColor: "#1DB584" }}
-                  >
-                    <div
-                      className="w-6 h-6 border-2 border-transparent rounded-full animate-spin"
-                      style={{ borderTopColor: "white" }}
-                    ></div>
+                  <div className="w-10 h-10 rounded-full bg-[#1DB584] flex items-center justify-center mx-auto mb-3 animate-spin">
+                    <div className="w-6 h-6 border-2 border-transparent rounded-full border-t-white"></div>
                   </div>
-                  <p className="text-gray-500">Loading agent details...</p>
+                  <p className="text-gray-500">Loading details…</p>
                 </div>
               </div>
             ) : selectedAgent ? (
-              <div className="p-6 space-y-6">
-                {/* Agent Header */}
-                <div
-                  style={{ backgroundColor: "#E0F2F1" }}
-                  className="p-4 rounded-lg border border-gray-200"
-                >
-                  <h3 className="font-bold text-xl text-gray-900">
+              <div className="p-6 space-y-8">
+                {/* ── Agent Header ── */}
+                <div className="bg-[#E0F2F1] p-5 rounded-lg border border-gray-200">
+                  <h3 className="text-2xl font-bold text-gray-900">
                     {selectedAgent.first_name} {selectedAgent.last_name}
                   </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {selectedAgent.rera_id}
-                  </p>
-                  <div
-                    className={`mt-2 flex items-center gap-2 px-3 py-1 rounded w-fit ${getStatusColor(
-                      selectedAgent.status
-                    )}`}
-                  >
+                  <p className="text-sm text-gray-600 mt-1">{selectedAgent.rera_id}</p>
+                  <div className={`mt-3 inline-flex items-center gap-2 px-3 py-1 rounded ${getStatusColor(selectedAgent.status)}`}>
                     {getStatusIcon(selectedAgent.status)}
-                    <span className="text-sm font-medium capitalize">
-                      {selectedAgent.status}
-                    </span>
+                    <span className="text-sm font-medium capitalize">{selectedAgent.status}</span>
                   </div>
                 </div>
 
-                {/* Agent Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-gray-600 font-medium text-sm">Email</p>
-                      <p className="text-gray-900 mt-1">
-                        {selectedAgent.email}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-gray-600 font-medium text-sm">Phone</p>
-                      <p className="text-gray-900 mt-1">
-                        {selectedAgent.phone}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-gray-600 font-medium text-sm">
-                        Specialization
-                      </p>
-                      <p className="text-gray-900 mt-1">
-                        {selectedAgent.specialization}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-gray-600 font-medium text-sm">
-                        Commission Rate
-                      </p>
-                      <p className="text-gray-900 mt-1">
-                        {selectedAgent.commission_rate}%
-                      </p>
-                    </div>
+                {/* ── Two-column Info Grid ── */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Left Column */}
+                  <div className="space-y-5">
+                    {[
+                      { label: "Email", value: selectedAgent.email },
+                      { label: "Phone", value: selectedAgent.phone },
+                      { label: "Specialization", value: selectedAgent.specialization },
+                      { label: "Commission Rate", value: `${selectedAgent.commission_rate}%` },
+                    ].map((i) => (
+                      <div key={i.label}>
+                        <p className="text-sm font-semibold text-[#1DB584]">{i.label}</p>
+                        <p className="mt-1 text-gray-900">{i.value}</p>
+                      </div>
+                    ))}
                   </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-gray-600 font-medium text-sm">
-                        PAN Number
-                      </p>
-                      <p className="text-gray-900 mt-1">
-                        {selectedAgent.pan_number}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-gray-600 font-medium text-sm">
-                        Aadhar Number
-                      </p>
-                      <p className="text-gray-900 mt-1">
-                        {selectedAgent.aadhar_number}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p className="text-gray-600 font-medium text-sm">
-                        Experience
-                      </p>
-                      <p className="text-gray-900 mt-1">
-                        {selectedAgent.experience_years || 0} years
-                      </p>
-                    </div>
+                  {/* Right Column */}
+                  <div className="space-y-5">
+                    {[
+                      { label: "PAN Number", value: selectedAgent.pan_number },
+                      { label: "Aadhar Number", value: selectedAgent.aadhar_number },
+                      { label: "Experience", value: `${selectedAgent.experience_years || 0} years` },
+                    ].map((i) => (
+                      <div key={i.label}>
+                        <p className="text-sm font-semibold text-[#1DB584]">{i.label}</p>
+                        <p className="mt-1 text-gray-900">{i.value}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* About Section */}
+                {/* ── About ── */}
                 <div>
-                  <p className="text-gray-600 font-medium text-sm mb-2">
-                    About
-                  </p>
-                  <p className="text-gray-900 bg-gray-50 p-3 rounded border border-gray-200">
+                  <p className="text-sm font-semibold text-[#1DB584] mb-2">About</p>
+                  <div className="bg-gray-50 p-4 rounded border border-gray-200 text-gray-900">
                     {selectedAgent.about_text || "No information provided"}
-                  </p>
+                  </div>
                 </div>
 
-                {/* Documents Section */}
-                {getAgentDocuments(selectedAgent).length > 0 ? (
-                  <div>
-                    <p className="text-gray-600 font-medium text-sm mb-3">
-                      Documents
-                    </p>
-                    <div className="space-y-2">
-                      {getAgentDocuments(selectedAgent).map((doc, idx) => (
-                        <a
-                          key={idx}
-                          href={getDocumentUrl(doc)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 text-sm p-3 rounded border border-gray-200 hover:bg-gray-50 transition-colors"
-                          style={{
-                            color: "#1DB584",
-                            backgroundColor: "#E0F2F1",
-                          }}
-                        >
-                          <Download className="w-4 h-4" />
-                          <span className="truncate flex-1">
-                            {getDocumentDisplayName(doc)}
-                          </span>
-                        </a>
-                      ))}
+                {/* ── Documents ── */}
+                {(() => {
+                  const docs = getAgentDocuments(selectedAgent);
+                  return docs.length > 0 ? (
+                    <div>
+                      <p className="text-sm font-semibold text-[#1DB584] mb-3">Documents</p>
+                      <div className="space-y-2">
+                        {docs.map((d, idx) => (
+                          <a
+                            key={idx}
+                            href={getDocumentUrl(d)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-3 p-3 rounded border border-gray-200 bg-[#E0F2F1] text-[#1DB584] hover:bg-[#b2dfdb] transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                            <span className="truncate flex-1">{getDocumentDisplayName(d)}</span>
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <div>
-                    <p className="text-gray-600 font-medium text-sm mb-2">
-                      Documents
-                    </p>
-                    <p className="text-gray-500 text-sm bg-gray-50 p-3 rounded border border-gray-200">
-                      No documents available
-                    </p>
-                  </div>
-                )}
+                  ) : (
+                    <div>
+                      <p className="text-sm font-semibold text-[#1DB584] mb-2">Documents</p>
+                      <p className="bg-gray-50 p-3 rounded border border-gray-200 text-gray-500">No documents available</p>
+                    </div>
+                  );
+                })()}
 
-                {/* Action Buttons */}
+                {/* ── Action Buttons (only for pending) ── */}
                 {selectedAgent.status === "pending" && (
                   <div className="flex gap-3 pt-4 border-t border-gray-200">
                     <button
-                      onClick={() =>
-                        updateAgentStatus(selectedAgent.id, "approved")
-                      }
-                      style={{ backgroundColor: "#2E7D32", color: "white" }}
-                      className="flex-1 font-medium py-3 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                      onClick={() => updateAgentStatus(selectedAgent.id, "approved")}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#2E7D32] text-white font-medium py-3 rounded-lg hover:opacity-90 transition-opacity"
                     >
                       <CheckCircle className="w-5 h-5" />
                       Approve Agent
                     </button>
                     <button
-                      onClick={() =>
-                        updateAgentStatus(selectedAgent.id, "rejected")
-                      }
-                      style={{ backgroundColor: "#C62828", color: "white" }}
-                      className="flex-1 font-medium py-3 px-4 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"
+                      onClick={() => updateAgentStatus(selectedAgent.id, "rejected")}
+                      className="flex-1 flex items-center justify-center gap-2 bg-[#C62828] text-white font-medium py-3 rounded-lg hover:opacity-90 transition-opacity"
                     >
                       <XCircle className="w-5 h-5" />
                       Reject Agent
@@ -650,16 +421,30 @@ const AgentsManagement = () => {
               </div>
             ) : (
               <div className="p-8 text-center">
-                <AlertCircle
-                  className="w-12 h-12 mx-auto mb-3"
-                  style={{ color: "#BDBDBD" }}
-                />
+                <AlertCircle className="w-12 h-12 mx-auto mb-3 text-[#BDBDBD]" />
                 <p className="text-gray-500">Failed to load agent details</p>
               </div>
             )}
           </div>
         </div>
       )}
+
+      {/* ───── Tailwind Animation for Toast ───── */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slideIn {
+          animation: slideIn 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };

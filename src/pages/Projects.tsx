@@ -487,7 +487,7 @@ export default function Projects() {
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Code:</span>
+                  <span className="text-muted-foreground">Project Code:</span>
                   <span className="font-medium text-xs bg-gray-100 px-2 py-1 rounded">
                     {project.project_code}
                   </span>

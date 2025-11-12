@@ -104,15 +104,63 @@ export default function ContactInfo() {
     }
   };
 
+  const handlePhoneChange = (value: string) => {
+    // Remove any non-digit characters
+    const digitsOnly = value.replace(/\D/g, '');
+    
+    // If it starts with 91 and has more than 2 digits, format as +91
+    if (digitsOnly.startsWith('91') && digitsOnly.length > 2) {
+      const restNumber = digitsOnly.slice(2);
+      if (restNumber.length <= 10) {
+        setFormData(prev => ({ 
+          ...prev, 
+          contact_value: `+91 ${restNumber}` 
+        }));
+      }
+    } 
+    // If it doesn't start with 91, treat as regular Indian number
+    else if (!digitsOnly.startsWith('91')) {
+      if (digitsOnly.length <= 10) {
+        const formattedValue = digitsOnly ? `+91 ${digitsOnly}` : '';
+        setFormData(prev => ({ 
+          ...prev, 
+          contact_value: formattedValue 
+        }));
+      }
+    }
+    // If user is typing +91 manually
+    else if (value.startsWith('+91')) {
+      const restNumber = value.slice(3).replace(/\D/g, '');
+      if (restNumber.length <= 10) {
+        setFormData(prev => ({ 
+          ...prev, 
+          contact_value: `+91 ${restNumber}` 
+        }));
+      }
+    }
+    
+    setErrors(prev => ({ ...prev, contact_value: "" }));
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === "contact_value" && formData.contact_type === "phone") {
+      handlePhoneChange(value);
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+    
     setErrors((prev) => ({ ...prev, [name]: "" }));
   };
 
   const handleSelectChange = (value: string) => {
-    setFormData((prev) => ({ ...prev, contact_type: value }));
-    setErrors((prev) => ({ ...prev, contact_type: "" }));
+    setFormData((prev) => ({ 
+      ...prev, 
+      contact_type: value,
+      contact_value: "" // Clear value when type changes
+    }));
+    setErrors((prev) => ({ ...prev, contact_type: "", contact_value: "" }));
   };
 
   const handleCheckboxChange = (name: string, checked: boolean) => {
@@ -143,9 +191,9 @@ export default function ContactInfo() {
           showToast("Please enter the email correctly (e.g., example@gmail.com)", "error");
         }
       } else if (formData.contact_type === "phone") {
-        const phoneRegex = /^\d{10}$/;
+        const phoneRegex = /^\+91\s?\d{10}$/;
         if (!phoneRegex.test(formData.contact_value)) {
-          newErrors.contact_value = "Phone number must be exactly 10 digits";
+          newErrors.contact_value = "Phone number must be exactly 10 digits after +91";
           showToast("Please enter a valid 10-digit phone number", "error");
         }
       } else if (formData.contact_type === "address") {
@@ -170,7 +218,12 @@ export default function ContactInfo() {
         ...formData,
         contact_type: formData.contact_type.toLowerCase(),
         label: formData.label.trim(),
+        // Ensure phone number is stored with +91 format
+        contact_value: formData.contact_type === "phone" ? 
+          formData.contact_value.replace(/\s/g, '') : // Remove spaces for storage
+          formData.contact_value
       };
+      
       if (currentContact) {
         await axios.put(`http://127.0.0.1:8000/api/contactInfo/edit/${currentContact.id}`, submitData);
         showToast("Contact updated successfully", "success");
@@ -189,6 +242,18 @@ export default function ContactInfo() {
       console.error("Error saving contact:", error);
       showToast("Failed to save contact", "error");
     }
+  };
+
+  const formatPhoneDisplay = (phoneValue: string) => {
+    // Format for display: +91 12345 67890
+    const cleanNumber = phoneValue.replace(/\D/g, '');
+    if (cleanNumber.startsWith('91') && cleanNumber.length === 12) {
+      const restNumber = cleanNumber.slice(2);
+      return `+91 ${restNumber.slice(0, 5)} ${restNumber.slice(5)}`;
+    } else if (cleanNumber.length === 10) {
+      return `+91 ${cleanNumber.slice(0, 5)} ${cleanNumber.slice(5)}`;
+    }
+    return phoneValue; // Return as is if doesn't match expected format
   };
 
   const getIcon = (type: string) => {
@@ -215,6 +280,13 @@ export default function ContactInfo() {
       default:
         return "Contact";
     }
+  };
+
+  const getDisplayValue = (contact: ContactInfo) => {
+    if (contact.contact_type === "phone") {
+      return formatPhoneDisplay(contact.contact_value);
+    }
+    return contact.contact_value;
   };
 
   return (
@@ -284,7 +356,9 @@ export default function ContactInfo() {
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-900 font-medium">{contact.contact_value}</p>
+                        <p className="text-gray-900 font-medium">
+                          {getDisplayValue(contact)}
+                        </p>
                         <p className="text-sm text-gray-500 mt-1">{getContactTypeLabel(contact.contact_type)}</p>
                       </div>
                     </div>
@@ -381,7 +455,7 @@ export default function ContactInfo() {
                 value={formData.contact_value}
                 onChange={handleChange}
                 placeholder={
-                  formData.contact_type === "phone" ? "+1234567890" :
+                  formData.contact_type === "phone" ? "+91 98765 43210" :
                   formData.contact_type === "email" ? "example@email.com" :
                   formData.contact_type === "address" ? "Enter your address" :
                   "Enter contact value"
@@ -391,6 +465,11 @@ export default function ContactInfo() {
               {errors.contact_value && (
                 <p className="text-red-500 text-sm flex items-center mt-1">
                   {errors.contact_value}
+                </p>
+              )}
+              {formData.contact_type === "phone" && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Enter 10-digit phone number. +91 will be added automatically.
                 </p>
               )}
             </div>
