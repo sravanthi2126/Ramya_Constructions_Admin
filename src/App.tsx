@@ -14,7 +14,8 @@ import NotFound from "./pages/NotFound";
 import Agents from "./pages/Agents";
 import ContactInquiry from "./pages/ContactInquiry";
 import ContactInfo from "./pages/ContactInfo";
-import Units from "./pages/Units"; // Add this import
+import Units from "./pages/Units";
+import { AdminProfile } from "./pages/AdminProfile"; // Add this import
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const queryClient = new QueryClient();
@@ -91,12 +92,14 @@ const App = () => (
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="projects" element={<Projects />} />
               <Route path="schemes" element={<Schemes />} />
-              <Route path="units" element={<Units />} /> {/* Add this route */}
+              <Route path="units" element={<Units />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="admin" element={<AdminManagement />} />
               <Route path="agents" element={<Agents />} />
               <Route path="contact-inquiry" element={<ContactInquiry />} />
               <Route path="contact-info" element={<ContactInfo />} />
+              {/* Add Profile Route */}
+              <Route path="admin/profile" element={<AdminProfile />} />
             </Route>
 
             {/* 404 Route */}

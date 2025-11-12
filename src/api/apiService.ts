@@ -120,25 +120,26 @@ export const adminApi = {
   },
 
   // Update Admin (Port 8000)
-  async updateAdmin(
-    adminId: string,
-    data: UpdateAdminRequest
-  ): Promise<ApiResponse<Admin>> {
-    try {
-      const response = await fetch(`${API_BASE_URL_WRITE}/${adminId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify(data),
-      });
+  // Update Admin (Port 8000)
+async updateAdmin(
+  adminId: string,
+  data: UpdateAdminRequest
+): Promise<ApiResponse<Admin>> {
+  try {
+    const response = await fetch(`${API_BASE_URL_WRITE}/${adminId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeader(),
+      },
+      body: JSON.stringify(data),
+    });
 
-      return handleResponse<ApiResponse<Admin>>(response);
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
+    return handleResponse<ApiResponse<Admin>>(response);
+  } catch (error) {
+    return handleNetworkError(error);
+  }
+},
 
   // Delete Admin (Port 8000)
   async deleteAdmin(adminId: string): Promise<ApiResponse> {
