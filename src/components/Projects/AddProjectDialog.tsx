@@ -33,7 +33,7 @@ interface ProjectFormData {
   long_description: string;
   status: "available" | "sold_out" | "coming_soon";
   base_price: number;
-  property_type: "commercial" | "residential" | "plot" | "land" | "mixed_use";
+  property_type: "commercial" | "residential" | "Plot";
   total_units: number;
   available_units: number;
   rera_number: string;
@@ -97,7 +97,7 @@ export function AddProjectDialog({
 
   const validateUnits = (total: number, available: number) => {
     if (available > total) {
-      return "Available units cannot exceed total units";
+      return "Available sqft cannot be lessthan total sqft.";
     }
     return true;
   };
@@ -187,10 +187,6 @@ export function AddProjectDialog({
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "plot":
         return "bg-amber-100 text-amber-800 border-amber-200";
-      case "land":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      case "mixed_use":
-        return "bg-indigo-100 text-indigo-800 border-indigo-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -235,9 +231,8 @@ export function AddProjectDialog({
                     required: "Project title is required",
                   })}
                   placeholder="Enter project title"
-                  className={`w-full ${
-                    errors.title ? "border-red-500 focus:ring-red-500" : ""
-                  }`}
+                  className={`w-full ${errors.title ? "border-red-500 focus:ring-red-500" : ""
+                    }`}
                 />
                 {errors.title && (
                   <div className="flex items-center gap-1 text-red-600 text-sm">
@@ -265,11 +260,10 @@ export function AddProjectDialog({
                     },
                   })}
                   placeholder="e.g., PROJ1"
-                  className={`w-full uppercase ${
-                    errors.project_code
+                  className={`w-full uppercase ${errors.project_code
                       ? "border-red-500 focus:ring-red-500"
                       : ""
-                  }`}
+                    }`}
                   onChange={(e) => {
                     const value = e.target.value
                       .toUpperCase()
@@ -300,9 +294,8 @@ export function AddProjectDialog({
                     required: "Location is required",
                   })}
                   placeholder="Enter project location"
-                  className={`w-full ${
-                    errors.location ? "border-red-500 focus:ring-red-500" : ""
-                  }`}
+                  className={`w-full ${errors.location ? "border-red-500 focus:ring-red-500" : ""
+                    }`}
                 />
                 {errors.location && (
                   <div className="flex items-center gap-1 text-red-600 text-sm">
@@ -331,11 +324,10 @@ export function AddProjectDialog({
                     },
                   })}
                   placeholder="e.g., 1, 2, 3, etc."
-                  className={`w-full ${
-                    errors.floor_number
+                  className={`w-full ${errors.floor_number
                       ? "border-red-500 focus:ring-red-500"
                       : ""
-                  }`}
+                    }`}
                 />
                 {errors.floor_number && (
                   <div className="flex items-center gap-1 text-red-600 text-sm">
@@ -360,9 +352,8 @@ export function AddProjectDialog({
                 })}
                 placeholder="Enter project description"
                 rows={3}
-                className={`w-full resize-none ${
-                  errors.description ? "border-red-500 focus:ring-red-500" : ""
-                }`}
+                className={`w-full resize-none ${errors.description ? "border-red-500 focus:ring-red-500" : ""
+                  }`}
               />
               {errors.description && (
                 <div className="flex items-center gap-1 text-red-600 text-sm">
@@ -411,14 +402,14 @@ export function AddProjectDialog({
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent className="z-50">
+                  <SelectContent className="z-50 bg-white shadow-lg">
                     <SelectItem value="available">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
                         Available
                       </div>
                     </SelectItem>
-                    <SelectItem value="sold_out">
+                    <SelectItem value="sold_out" >
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                         Sold Out
@@ -447,12 +438,10 @@ export function AddProjectDialog({
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select property type" />
                   </SelectTrigger>
-                  <SelectContent className="z-50">
+                  <SelectContent className="z-50 bg-white shadow-lg">
                     <SelectItem value="residential">Residential</SelectItem>
                     <SelectItem value="commercial">Commercial</SelectItem>
                     <SelectItem value="plot">Plot</SelectItem>
-                    <SelectItem value="land">Land</SelectItem>
-                    <SelectItem value="mixed_use">Mixed Use</SelectItem>
                   </SelectContent>
                 </Select>
                 <div className="mt-1">
@@ -483,9 +472,8 @@ export function AddProjectDialog({
                     min: { value: 1, message: "Price must be greater than 0" },
                   })}
                   placeholder="Enter base price"
-                  className={`w-full ${
-                    errors.base_price ? "border-red-500 focus:ring-red-500" : ""
-                  }`}
+                  className={`w-full ${errors.base_price ? "border-red-500 focus:ring-red-500" : ""
+                    }`}
                 />
                 {errors.base_price && (
                   <div className="flex items-center gap-1 text-red-600 text-sm">
@@ -500,7 +488,7 @@ export function AddProjectDialog({
                   htmlFor="total_units"
                   className="text-sm font-medium text-gray-700"
                 >
-                  Total Units *
+                  Total Sqft *
                 </Label>
                 <Input
                   id="total_units"
@@ -513,11 +501,10 @@ export function AddProjectDialog({
                       handleTotalUnitsChange(Number(e.target.value)),
                   })}
                   placeholder="Enter total units"
-                  className={`w-full ${
-                    errors.total_units
+                  className={`w-full ${errors.total_units
                       ? "border-red-500 focus:ring-red-500"
                       : ""
-                  }`}
+                    }`}
                 />
                 {errors.total_units && (
                   <div className="flex items-center gap-1 text-red-600 text-sm">
@@ -532,7 +519,7 @@ export function AddProjectDialog({
                   htmlFor="available_units"
                   className="text-sm font-medium text-gray-700"
                 >
-                  Available Units *
+                  Available Sqft *
                 </Label>
                 <Input
                   id="available_units"
@@ -547,11 +534,10 @@ export function AddProjectDialog({
                     },
                   })}
                   placeholder="Enter available units"
-                  className={`w-full ${
-                    errors.available_units
+                  className={`w-full ${errors.available_units
                       ? "border-red-500 focus:ring-red-500"
                       : ""
-                  }`}
+                    }`}
                 />
                 {errors.available_units && (
                   <div className="flex items-center gap-1 text-red-600 text-sm">
@@ -562,7 +548,7 @@ export function AddProjectDialog({
                 {totalUnits > 0 && (
                   <div className="flex items-center gap-1 text-xs text-green-600">
                     <CheckCircle2 className="h-3 w-3" />
-                    Sold units calculated: {soldUnits}
+                    Sold Sqft calculated: {soldUnits}
                   </div>
                 )}
               </div>
@@ -622,7 +608,7 @@ export function AddProjectDialog({
                 onCheckedChange={(checked) =>
                   setValue("has_rental_income", checked)
                 }
-                disabled={propertyType === "plot" || propertyType === "land"}
+                disabled={propertyType === "plot"}
               />
               <div className="flex-1">
                 <Label
@@ -636,7 +622,7 @@ export function AddProjectDialog({
                 </p>
               </div>
             </div>
-            {(propertyType === "plot" || propertyType === "land") && (
+            {(propertyType === "plot") && (
               <Alert className="bg-amber-50 border-amber-200 text-amber-800">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>

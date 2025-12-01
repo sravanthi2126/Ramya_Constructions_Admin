@@ -51,6 +51,7 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+
   const {
     register,
     handleSubmit,
@@ -66,6 +67,9 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
       rental_start_month: 1,
     },
   });
+
+  const startDate = watch("start_date");
+  const endDate = watch("end_date");
 
   // Watch scheme type to handle conditional fields
   const watchedSchemeType = watch("scheme_type");
@@ -201,11 +205,10 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                     },
                   })}
                   placeholder="Enter scheme name"
-                  className={`border-gray-300 focus:border-blue-500 ${
-                    errors.scheme_name
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
-                  }`}
+                  className={`border-gray-300 focus:border-blue-500 ${errors.scheme_name
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                    }`}
                 />
                 {errors.scheme_name && (
                   <p className="text-sm text-red-600 mt-1">
@@ -215,18 +218,13 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  Project *
-                </Label>
+                <Label className="text-sm font-medium text-gray-700">Project *</Label>
                 <Select
-                  onValueChange={(value) => setValue("project_id", value)}
+                  onValueChange={(value) => setValue("project_id", value, { shouldValidate: true })}
                 >
                   <SelectTrigger
-                    className={`border-gray-300 focus:border-blue-500 ${
-                      errors.project_id
-                        ? "border-red-500 focus:border-red-500"
-                        : ""
-                    }`}
+                    className={`border-gray-300 focus:border-blue-500 ${errors.project_id ? "border-red-500 focus:border-red-500" : ""
+                      }`}
                   >
                     <SelectValue placeholder="Select project" />
                   </SelectTrigger>
@@ -254,10 +252,17 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                 </Select>
                 {errors.project_id && (
                   <p className="text-sm text-red-600 mt-1">
-                    Please select a project
+                    {errors.project_id.message}
                   </p>
                 )}
               </div>
+              {/* Hidden register for validation */}
+              <input
+                type="hidden"
+                {...register("project_id", {
+                  required: "Please select a project",
+                })}
+              />
             </div>
           </div>
 
@@ -287,10 +292,10 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-lg">
                     <SelectItem value="single_payment">
-                      💰 Single Payment
+                      Single Payment
                     </SelectItem>
                     <SelectItem value="installment">
-                      📅 Installment Plan
+                      Installment Plan
                     </SelectItem>
                   </SelectContent>
                 </Select>
@@ -312,11 +317,10 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                     min: { value: 1, message: "Area must be greater than 0" },
                   })}
                   placeholder="Enter area in sqft"
-                  className={`border-gray-300 focus:border-blue-500 ${
-                    errors.area_sqft
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
-                  }`}
+                  className={`border-gray-300 focus:border-blue-500 ${errors.area_sqft
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                    }`}
                 />
                 {errors.area_sqft && (
                   <p className="text-sm text-red-600 mt-1">
@@ -340,14 +344,13 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                   {...register("booking_advance", {
                     required: "Booking advance is required",
                     valueAsNumber: true,
-                    min: { value: 1, message: "Amount must be greater than 0" },
+                    min: { value: 0, message: "Amount must be greater than or equal to 0" },
                   })}
                   placeholder="Enter booking advance"
-                  className={`border-gray-300 focus:border-blue-500 ${
-                    errors.booking_advance
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
-                  }`}
+                  className={`border-gray-300 focus:border-blue-500 ${errors.booking_advance
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                    }`}
                 />
                 {errors.booking_advance && (
                   <p className="text-sm text-red-600 mt-1">
@@ -370,14 +373,12 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                     required: "Rental start month is required",
                     valueAsNumber: true,
                     min: { value: 1, message: "Month must be at least 1" },
-                    max: { value: 12, message: "Month must be at most 12" },
                   })}
                   placeholder="Enter rental start month"
-                  className={`border-gray-300 focus:border-blue-500 ${
-                    errors.rental_start_month
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
-                  }`}
+                  className={`border-gray-300 focus:border-blue-500 ${errors.rental_start_month
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                    }`}
                 />
                 {errors.rental_start_month && (
                   <p className="text-sm text-red-600 mt-1">
@@ -406,11 +407,10 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                     min: { value: 1, message: "Days must be at least 1" },
                   })}
                   placeholder="Enter balance payment days"
-                  className={`border-blue-300 focus:border-blue-500 ${
-                    errors.balance_payment_days
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
-                  }`}
+                  className={`border-blue-300 focus:border-blue-500 ${errors.balance_payment_days
+                    ? "border-red-500 focus:border-red-500"
+                    : ""
+                    }`}
                 />
                 {errors.balance_payment_days && (
                   <p className="text-sm text-red-600 mt-1">
@@ -441,11 +441,10 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                       },
                     })}
                     placeholder="Enter total installments"
-                    className={`border-purple-300 focus:border-purple-500 ${
-                      errors.total_installments
-                        ? "border-red-500 focus:border-red-500"
-                        : ""
-                    }`}
+                    className={`border-purple-300 focus:border-purple-500 ${errors.total_installments
+                      ? "border-red-500 focus:border-red-500"
+                      : ""
+                      }`}
                   />
                   {errors.total_installments && (
                     <p className="text-sm text-red-600 mt-1">
@@ -473,11 +472,10 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                       },
                     })}
                     placeholder="Enter monthly installment amount"
-                    className={`border-purple-300 focus:border-purple-500 ${
-                      errors.monthly_installment_amount
-                        ? "border-red-500 focus:border-red-500"
-                        : ""
-                    }`}
+                    className={`border-purple-300 focus:border-purple-500 ${errors.monthly_installment_amount
+                      ? "border-red-500 focus:border-red-500"
+                      : ""
+                      }`}
                   />
                   {errors.monthly_installment_amount && (
                     <p className="text-sm text-red-600 mt-1">
@@ -511,12 +509,13 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                   type="date"
                   {...register("start_date", {
                     required: "Start date is required",
+                    validate: (value) =>
+                      endDate && new Date(value) > new Date(endDate)
+                        ? "Start date must be before end date"
+                        : true,
                   })}
-                  className={`border-gray-300 focus:border-blue-500 ${
-                    errors.start_date
-                      ? "border-red-500 focus:border-red-500"
-                      : ""
-                  }`}
+                  className={`border-gray-300 focus:border-blue-500 ${errors.start_date ? "border-red-500 focus:border-red-500" : ""
+                    }`}
                 />
                 {errors.start_date && (
                   <p className="text-sm text-red-600 mt-1">
@@ -535,8 +534,15 @@ export function AddSchemeDialog({ onSuccess }: { onSuccess?: () => void }) {
                 <Input
                   id="end_date"
                   type="date"
-                  {...register("end_date")}
-                  className="border-gray-300 focus:border-blue-500"
+                  {...register("end_date", {
+                    required: "End date is required",
+                    validate: (value) =>
+                      startDate && new Date(value) < new Date(startDate)
+                        ? "End date must be after start date"
+                        : true,
+                  })}
+                  className={`border-gray-300 focus:border-blue-500 ${errors.end_date ? "border-red-500 focus:border-red-500" : ""
+                    }`}
                 />
               </div>
             </div>

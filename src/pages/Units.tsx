@@ -55,10 +55,11 @@ import {
   LegalAgreement,
   CreateLegalAgreementRequest,
   UpdateLegalAgreementRequest,
+  PaymentHistoryResponse,
 } from "@/api/apiService";
-import { PurchasedUnit, Project, Scheme } from "@/types/admin";
+import { PurchasedUnit, Project } from "@/types/admin";
 import { UnitDetailsModal } from "@/components/Units/UnitDetailsModal";
-import { AddUnitDialog } from "@/components/Units/AddUnitDialog";
+// import { AddUnitDialog } from "@/components/Units/AddUnitDialog";
 
 // Legal Agreements Dialog Component
 const LegalAgreementsDialog = ({
@@ -77,6 +78,8 @@ const LegalAgreementsDialog = ({
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedAgreement, setSelectedAgreement] =
     useState<LegalAgreement | null>(null);
+
+  // const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryResponse | null>(null);
   const { toast } = useToast();
 
   const fetchAgreements = async () => {
@@ -152,6 +155,34 @@ const LegalAgreementsDialog = ({
         variant: "destructive",
       });
     }
+  };
+
+
+  const exportPaymentHistory = (data: PaymentHistoryResponse | null) => {
+    if (!data || data.payments.length === 0) {
+      toast({ title: "No data", description: "Nothing to export", variant: "destructive" });
+      return;
+    }
+
+    const csv = [
+      ["Date", "Type", "Amount", "Method", "Receipt ID", "Status"].join(","),
+      ...data.payments.map(p => [
+        p.payment_date,
+        p.transaction_type.replace('_', ' ').toUpperCase(),
+        p.amount,
+        p.payment_method.replace('_', ' '),
+        p.receipt_id,
+        p.payment_status
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `payments_${data.unit_number}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   };
 
   const getAgreementTypeDisplay = (type: string) => {
@@ -274,12 +305,12 @@ const LegalAgreementsDialog = ({
                             </span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">
+                            {/* <span className="text-muted-foreground">
                               Signatories:{" "}
-                            </span>
-                            <span className="font-medium">
+                            </span> */}
+                            {/* <span className="font-medium">
                               {agreement.signatories.join(", ")}
-                            </span>
+                            </span> */}
                           </div>
                         </div>
 
@@ -441,17 +472,6 @@ const CreateEditLegalAgreementDialog = ({
     if (!unit?.id) return;
 
     // Validate required fields
-    const validSignatories = formData.signatories.filter(
-      (s) => s.trim() !== ""
-    );
-    if (validSignatories.length < 2) {
-      toast({
-        title: "Validation Error",
-        description: "At least 2 signatories are required",
-        variant: "destructive",
-      });
-      return;
-    }
 
     if (!formData.document_name.trim()) {
       toast({
@@ -468,7 +488,6 @@ const CreateEditLegalAgreementDialog = ({
         unit_id: unit.id,
         agreement_type: formData.agreement_type,
         document_name: formData.document_name,
-        signatories: validSignatories,
         agreement_date: formData.agreement_date,
         valid_until: formData.valid_until,
         status: formData.status,
@@ -625,19 +644,7 @@ const CreateEditLegalAgreementDialog = ({
                     <SelectItem value="signed" className="py-2">
                       <div className="flex items-center gap-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        signed
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="executed" className="py-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                        executed
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="pending_signature" className="py-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                        pending_signature
+                        final
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -663,118 +670,6 @@ const CreateEditLegalAgreementDialog = ({
                 className="w-full bg-white border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
-          </div>
-
-          {/* Dates Section */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium text-gray-900 border-b pb-2">
-              Agreement Dates
-            </h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  Agreement Date <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="date"
-                  required
-                  value={formData.agreement_date}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      agreement_date: e.target.value,
-                    }))
-                  }
-                  className="w-full bg-white border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  Valid Until <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="date"
-                  required
-                  value={formData.valid_until}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      valid_until: e.target.value,
-                    }))
-                  }
-                  className="w-full bg-white border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Signatories Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="text-lg font-medium text-gray-900">Signatories</h3>
-              <span className="text-sm text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                Minimum 2 required
-              </span>
-            </div>
-
-            <div className="space-y-3">
-              {formData.signatories.map((signatory, index) => (
-                <div key={index} className="flex gap-3 items-start">
-                  <div className="flex-1 space-y-1">
-                    <label className="text-sm text-gray-600">
-                      Signatory {index + 1}
-                      {index < 2 && (
-                        <span className="text-red-500 ml-1">*</span>
-                      )}
-                    </label>
-                    <Input
-                      placeholder={`Enter signatory ${index + 1} name`}
-                      value={signatory}
-                      onChange={(e) =>
-                        handleSignatoryChange(index, e.target.value)
-                      }
-                      required={index < 2}
-                      className="w-full bg-white border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  {formData.signatories.length > 2 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeSignatory(index)}
-                      className="mt-6 text-red-600 hover:text-red-800 hover:bg-red-50 border-red-200"
-                    >
-                      Remove
-                    </Button>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addSignatory}
-              className="w-full border-dashed border-gray-300 text-gray-600 hover:text-gray-800 hover:border-gray-400"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Another Signatory
-            </Button>
-
-            {formData.signatories.filter((s) => s.trim() !== "").length < 2 && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-600" />
-                  <p className="text-sm text-amber-800">
-                    At least 2 signatories are required for the agreement to be
-                    valid.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Document Upload Section */}
@@ -940,42 +835,31 @@ export default function Units() {
   const [projectMap, setProjectMap] = useState<Record<string, string>>({});
   const [schemeMap, setSchemeMap] = useState<Record<string, string>>({});
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [totalUnits, setTotalUnits] = useState(0);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryResponse | null>(null);
+  const [projectsWithSchemes, setProjectsWithSchemes] = useState<
+    { project_id: string; project_name: string; schemes: { scheme_id: string; scheme_name: string }[] }[]
+  >([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
+  const [selectedSchemeId, setSelectedSchemeId] = useState<string>("all");
 
-  // Fetch projects and schemes for mapping IDs to names
-  const fetchMappings = async () => {
-    try {
-      const [projectsResponse, schemesResponse] = await Promise.all([
-        projectApi.getAllProjects(1, 100),
-        schemeApi.getAllSchemes(undefined, 1, 100),
-      ]);
-
-      // Create project ID to name mapping
-      const projectMapping: Record<string, string> = {};
-      projectsResponse.projects.forEach((project) => {
-        projectMapping[project.id] = project.title;
-      });
-
-      // Create scheme ID to name mapping
-      const schemeMapping: Record<string, string> = {};
-      schemesResponse.schemes.forEach((scheme) => {
-        schemeMapping[scheme.id] = scheme.scheme_name;
-      });
-
-      setProjectMap(projectMapping);
-      setSchemeMap(schemeMapping);
-    } catch (error) {
-      console.error("Error fetching mappings:", error);
+  const fetchAllUnits = async (page: number = 1) => {
+    if (page === 1) {
+      setIsLoading(true);
+    } else {
+      setIsLoadingMore(true);
     }
-  };
-
-  const fetchAllUnits = async () => {
-    setIsLoading(true);
     setError(null);
+
     try {
-      const data = await purchasedUnitApi.getAll();
-      setUnits(data);
-      setFilteredUnits(data);
-      await fetchMappings(); // Fetch mappings after units
+      const result = await purchasedUnitApi.getAll(page, pageSize);
+      setUnits(result.data);
+      setFilteredUnits(result.data);
+      setTotalUnits(result.total);
+      setCurrentPage(result.page);
     } catch (err: any) {
       const errorMessage = err.detail || err.message || "Failed to fetch units";
       setError(errorMessage);
@@ -986,9 +870,9 @@ export default function Units() {
       });
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   };
-
   const fetchUserUnits = async () => {
     if (!userId) return;
     setIsLoading(true);
@@ -997,7 +881,7 @@ export default function Units() {
       const data = await purchasedUnitApi.getByUserId(userId);
       setUnits(data);
       setFilteredUnits(data);
-      await fetchMappings();
+      // await fetchMappings();
     } catch (err: any) {
       const errorMessage =
         err.detail || err.message || "Failed to fetch user units";
@@ -1012,6 +896,11 @@ export default function Units() {
     }
   };
 
+  const handleProjectChange = (value: string) => {
+    setSelectedProjectId(value);
+    setSelectedSchemeId("all"); // Reset scheme when project changes
+  };
+
   const fetchUnitByNumber = async () => {
     if (!unitNumber) return;
     setIsLoading(true);
@@ -1020,7 +909,7 @@ export default function Units() {
       const data = await purchasedUnitApi.getByUnitNumber(unitNumber);
       setUnits([data]);
       setFilteredUnits([data]);
-      await fetchMappings();
+      // await fetchMappings();
     } catch (err: any) {
       const errorMessage = err.detail || err.message || "Failed to fetch unit";
       setError(errorMessage);
@@ -1038,9 +927,27 @@ export default function Units() {
 
   useEffect(() => {
     if (activeTab === "all") {
-      fetchAllUnits();
+      fetchAllUnits(currentPage);
     }
-  }, [activeTab]);
+  }, [activeTab, currentPage]);
+
+  useEffect(() => {
+    const fetchProjectsAndSchemes = async () => {
+      try {
+        const data = await purchasedUnitApi.getProjectsWithSchemes();
+        setProjectsWithSchemes(data);
+      } catch (err) {
+        console.error("Failed to load projects with schemes");
+        toast({
+          title: "Warning",
+          description: "Could not load project/scheme filters",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchProjectsAndSchemes();
+  }, []);
 
   useEffect(() => {
     let filtered = units;
@@ -1049,35 +956,44 @@ export default function Units() {
       filtered = filtered.filter(
         (unit) =>
           unit.unit_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          unit.payment_status
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
+          unit.payment_status.toLowerCase().includes(searchTerm.toLowerCase()) ||
           unit.unit_status.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          projectMap[unit.project_id]
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          schemeMap[unit.scheme_id]
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase())
+          projectMap[unit.project_id]?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          schemeMap[unit.scheme_id]?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (statusFilter !== "all") {
-      filtered = filtered.filter(
-        (unit) => unit.payment_status === statusFilter
-      );
+      filtered = filtered.filter((unit) => unit.payment_status === statusFilter);
     }
 
     if (ownershipFilter !== "all") {
       filtered = filtered.filter((unit) =>
-        ownershipFilter === "joint"
-          ? unit.is_joint_ownership
-          : !unit.is_joint_ownership
+        ownershipFilter === "joint" ? unit.is_joint_ownership : !unit.is_joint_ownership
       );
     }
 
+    // New: Filter by selected project
+    if (selectedProjectId !== "all") {
+      filtered = filtered.filter((unit) => unit.project_id === selectedProjectId);
+    }
+
+    // New: Filter by selected scheme
+    if (selectedSchemeId !== "all") {
+      filtered = filtered.filter((unit) => unit.scheme_id === selectedSchemeId);
+    }
+
     setFilteredUnits(filtered);
-  }, [units, searchTerm, statusFilter, ownershipFilter, projectMap, schemeMap]);
+  }, [
+    units,
+    searchTerm,
+    statusFilter,
+    ownershipFilter,
+    selectedProjectId,
+    selectedSchemeId,
+    projectMap,
+    schemeMap,
+  ]);
 
   const handleTabChange = (tab: "all" | "byUser" | "byUnit") => {
     setActiveTab(tab);
@@ -1090,9 +1006,27 @@ export default function Units() {
     setOwnershipFilter("all");
   };
 
-  const handleViewUnit = (unit: PurchasedUnit) => {
+  // const handleViewUnit = (unit: PurchasedUnit) => {
+  //   setSelectedUnit(unit);
+  //   setIsModalOpen(true);
+  // };
+  const handleViewUnit = async (unit: PurchasedUnit) => {
     setSelectedUnit(unit);
+    setPaymentHistory(null); // reset previous
     setIsModalOpen(true);
+
+    try {
+      console.log("Fetching payments for:", unit.unit_number); // Debug log
+      const data = await purchasedUnitApi.getAllPaymentsByUnitNumber(unit.unit_number);
+      setPaymentHistory(data);
+    } catch (err: any) {
+      console.error("Failed to fetch payment history:", err);
+      toast({
+        title: "Payment History",
+        description: "Could not load payment history",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleLegalAgreements = (unit: PurchasedUnit) => {
@@ -1114,6 +1048,8 @@ export default function Units() {
     setSearchTerm("");
     setStatusFilter("all");
     setOwnershipFilter("all");
+    setSelectedProjectId("all");
+    setSelectedSchemeId("all");
   };
 
   const getStatusColor = (status: string) => {
@@ -1160,6 +1096,7 @@ export default function Units() {
   const getSchemeName = (schemeId: string) => {
     return schemeMap[schemeId] || schemeId;
   };
+
 
   // Loading Skeleton
   const UnitSkeleton = () => (
@@ -1236,31 +1173,28 @@ export default function Units() {
             <nav className="flex -mb-px">
               <button
                 onClick={() => handleTabChange("all")}
-                className={`py-3 px-4 text-sm font-medium border-b-2 ${
-                  activeTab === "all"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                className={`py-3 px-4 text-sm font-medium border-b-2 ${activeTab === "all"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 All Units
               </button>
               <button
                 onClick={() => handleTabChange("byUser")}
-                className={`py-3 px-4 text-sm font-medium border-b-2 ${
-                  activeTab === "byUser"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                className={`py-3 px-4 text-sm font-medium border-b-2 ${activeTab === "byUser"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 By User ID
               </button>
               <button
                 onClick={() => handleTabChange("byUnit")}
-                className={`py-3 px-4 text-sm font-medium border-b-2 ${
-                  activeTab === "byUnit"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
+                className={`py-3 px-4 text-sm font-medium border-b-2 ${activeTab === "byUnit"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700"
+                  }`}
               >
                 By Unit Number
               </button>
@@ -1343,12 +1277,55 @@ export default function Units() {
             )}
 
             {/* Filters */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              {/* Project Dropdown */}
+              <Select value={selectedProjectId} onValueChange={handleProjectChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Projects" />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-white shadow-lg">
+                  <SelectItem value="all">All Projects</SelectItem>
+                  {projectsWithSchemes.map((proj) => (
+                    <SelectItem key={proj.project_id} value={proj.project_id}>
+                      {proj.project_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Scheme Dropdown - Only shows schemes of selected project */}
+              <Select
+                value={selectedSchemeId}
+                onValueChange={setSelectedSchemeId}
+                disabled={!selectedProjectId || selectedProjectId === "all"}
+              >
+                <SelectTrigger>
+                  <SelectValue
+                    placeholder={
+                      selectedProjectId && selectedProjectId !== "all"
+                        ? "All Schemes"
+                        : "Select a project first"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent className="z-50 bg-white shadow-lg">
+                  <SelectItem value="all">All Schemes</SelectItem>
+                  {selectedProjectId &&
+                    selectedProjectId !== "all" &&
+                    projectsWithSchemes
+                      .find((p) => p.project_id === selectedProjectId)
+                      ?.schemes.map((scheme) => (
+                        <SelectItem key={scheme.scheme_id} value={scheme.scheme_id}>
+                          {scheme.scheme_name}
+                        </SelectItem>
+                      ))}
+                </SelectContent>
+              </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Payment Status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-white shadow-lg">
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="none">None</SelectItem>
                   <SelectItem value="advance_paid">Advance Paid</SelectItem>
@@ -1364,7 +1341,7 @@ export default function Units() {
                 <SelectTrigger>
                   <SelectValue placeholder="Ownership Type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-50 bg-white shadow-lg">
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="single">Single Ownership</SelectItem>
                   <SelectItem value="joint">Joint Ownership</SelectItem>
@@ -1376,15 +1353,15 @@ export default function Units() {
             {(searchTerm ||
               statusFilter !== "all" ||
               ownershipFilter !== "all") && (
-              <Button
-                variant="outline"
-                onClick={clearFilters}
-                className="flex items-center gap-2 w-full sm:w-auto"
-              >
-                <X className="w-4 h-4" />
-                Clear Filters
-              </Button>
-            )}
+                <Button
+                  variant="outline"
+                  onClick={clearFilters}
+                  className="flex items-center gap-2 w-full sm:w-auto"
+                >
+                  <X className="w-4 h-4" />
+                  Clear Filters
+                </Button>
+              )}
           </div>
         </div>
       </Card>
@@ -1446,7 +1423,7 @@ export default function Units() {
                     className="font-medium text-right max-w-[120px] truncate"
                     title={getProjectName(unit.project_id)}
                   >
-                    {getProjectName(unit.project_id)}
+                    {getProjectName(unit.project_name)}
                   </span>
                 </div>
 
@@ -1456,13 +1433,21 @@ export default function Units() {
                     className="font-medium text-right max-w-[120px] truncate"
                     title={getSchemeName(unit.scheme_id)}
                   >
-                    {getSchemeName(unit.scheme_id)}
+                    {getSchemeName(unit.scheme_name)}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center">
-                    <DollarSign className="w-4 h-4 mr-1" />
+                    Scheme_Type:
+                  </span>
+                  <span className="font-medium">
+                    {(unit.scheme_type)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center">
                     Investment:
                   </span>
                   <span className="font-medium">
@@ -1505,7 +1490,7 @@ export default function Units() {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span className="flex items-center">
                     <Calendar className="w-3 h-3 mr-1" />
-                    Purchase:
+                    Purchase Date:
                   </span>
                   <span>{formatDate(unit.purchase_date)}</span>
                 </div>
@@ -1535,6 +1520,38 @@ export default function Units() {
         ))}
       </div>
 
+      {/* Pagination Controls */}
+      {totalUnits > 0 && (
+        <div className="flex items-center justify-between py-6">
+          <div className="text-sm text-muted-foreground">
+            Showing {(currentPage - 1) * pageSize + 1} to{" "}
+            {Math.min(currentPage * pageSize, totalUnits)} of {totalUnits} units
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1 || isLoadingMore}
+            >
+              Previous
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => prev + 1)}
+              disabled={
+                currentPage * pageSize >= totalUnits || isLoadingMore
+              }
+            >
+              {isLoadingMore ? "Loading..." : "Next"}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {filteredUnits.length === 0 && !isLoading && (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
           <div className="text-muted-foreground mb-4 text-base md:text-lg">
@@ -1542,15 +1559,6 @@ export default function Units() {
               ? "No purchased units found"
               : "No units match your filters"}
           </div>
-          {units.length === 0 ? (
-            <AddUnitDialog onSuccess={handleUnitAdded}>
-              <Button>Create Your First Unit</Button>
-            </AddUnitDialog>
-          ) : (
-            <Button variant="outline" onClick={clearFilters}>
-              Clear Filters
-            </Button>
-          )}
         </div>
       )}
 
@@ -1564,16 +1572,68 @@ export default function Units() {
         }}
       />
 
-      {/* Unit Details Modal */}
       <UnitDetailsModal
         unit={selectedUnit}
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
           setSelectedUnit(null);
+          setPaymentHistory(null);
         }}
         projectMap={projectMap}
         schemeMap={schemeMap}
+        paymentData={paymentHistory}
+        // ADD THESE MISSING PROPS
+        getTransactionTypeText={(type: string) => {
+          const map: Record<string, string> = {
+            advance_payment: "Advance Payment",
+            installment: "Installment Payment",
+            full_payment: "Full Payment",
+            registration_charges: "Registration Charges",
+            maintenance: "Maintenance Fee",
+            penalty: "Late Payment Penalty",
+            refund: "Refund",
+            other: "Other Charges",
+          };
+          return map[type] || type.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+        }}
+        handleExport={() => {
+          if (!paymentHistory) {
+            toast({
+              title: "No data",
+              description: "Nothing to export",
+              variant: "destructive",
+            });
+            return;
+          }
+
+          const csv = [
+            ["Date", "Type", "Amount", "Method", "Receipt ID", "Status"].join(","),
+            ...paymentHistory.payments.map(p => [
+              p.payment_date,
+              p.transaction_type.replace('_', ' ').toUpperCase(),
+              p.amount,
+              p.payment_method.replace('_', ' '),
+              p.receipt_id || p.order_id,
+              p.payment_status
+            ].join(","))
+          ].join("\n");
+
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `payments_${paymentHistory.unit_number}.csv`;
+          a.click();
+          window.URL.revokeObjectURL(url);
+        }}
+        handleDownloadReceipt={(orderId: string) => {
+          // Implement receipt download logic or show toast if not ready
+          toast({
+            title: "Coming Soon",
+            description: `Download receipt for ${orderId}`,
+          });
+        }}
       />
     </div>
   );

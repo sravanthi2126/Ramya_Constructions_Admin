@@ -27,6 +27,7 @@ import {
   UpdateSchemeRequest,
   projectApi,
   Project,
+  SchemeListResponse,
 } from "@/api/apiService.ts";
 import {
   IndianRupee,
@@ -203,9 +204,9 @@ function EditSchemeDialog({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="single_payment">
-                      💰 Single Payment
+                      Single Payment
                     </SelectItem>
-                    <SelectItem value="installment">📅 Installment</SelectItem>
+                    <SelectItem value="installment"> Installment</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -347,8 +348,8 @@ function EditSchemeDialog({
             </div>
 
             <div className="flex items-center space-x-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <Switch 
-                id="is_active" 
+              <Switch
+                id="is_active"
                 checked={isActive}
                 onCheckedChange={(checked) => setValue("is_active", checked)}
               />
@@ -382,21 +383,30 @@ function EditSchemeDialog({
 
 export default function Schemes() {
   const [schemes, setSchemes] = useState<Scheme[]>([]);
+  const [data, setData] = useState<SchemeListResponse | null>(null);
   const [projectMap, setProjectMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  // const schemesPerPage = 6;
+  const [totalPages, setTotalPages] = useState(1);
+  const currentSchemes = schemes;
 
-  const fetchData = async () => {
+  const fetchData = async (page = 1) => {
     try {
       setLoading(true);
       const [schemeRes, projectRes] = await Promise.all([
-        schemeApi.getAllSchemes(),
+        schemeApi.getAllSchemes(page), //  pass page param
         projectApi.getAllProjects(),
       ]);
       setSchemes(schemeRes.schemes);
+      setData(schemeRes);
       const map: Record<string, string> = {};
       projectRes.projects.forEach((p) => (map[p.id] = p.title));
       setProjectMap(map);
+      // 👇 Save pagination info from backend
+      setCurrentPage(schemeRes.page);
+      setTotalPages(schemeRes.total_pages);
     } catch (error: any) {
       toast({
         title: "Error",
@@ -441,7 +451,7 @@ export default function Schemes() {
   };
 
   const formatPrice = (price: number | null | undefined) => {
-    if (price == null) return "N/A";
+    if (price == null) return "0";
     if (price >= 10000000) return `₹${(price / 10000000).toFixed(1)} Cr`;
     if (price >= 100000) return `₹${(price / 100000).toFixed(1)} L`;
     return `₹${price.toLocaleString()}`;
@@ -453,6 +463,14 @@ export default function Schemes() {
       month: "short",
       year: "numeric",
     });
+  };
+
+
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      fetchData(page);
+    }
   };
 
   if (loading) {
@@ -502,7 +520,7 @@ export default function Schemes() {
                     Total Schemes
                   </p>
                   <p className="text-xl font-bold text-gray-900">
-                    {schemes.length}
+                    {data?.total_schemes ?? 0}
                   </p>
                 </div>
               </div>
@@ -518,7 +536,7 @@ export default function Schemes() {
                     Active Schemes
                   </p>
                   <p className="text-xl font-bold text-green-700">
-                    {schemes.filter((s) => s.is_active ?? true).length}
+                    {data?.total_active_schemes ?? 0}
                   </p>
                 </div>
               </div>
@@ -533,7 +551,7 @@ export default function Schemes() {
 
       {/* Schemes Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {schemes.map((scheme) => (
+        {currentSchemes.map((scheme) => (
           <Card
             key={scheme.id}
             className="group relative overflow-hidden bg-white hover:shadow-md transition-all duration-300 border border-gray-200 hover:border-blue-300 rounded-lg"
@@ -571,8 +589,8 @@ export default function Schemes() {
                   className="capitalize px-3 py-1 text-xs font-medium bg-blue-50 border-blue-200 text-blue-700"
                 >
                   {scheme.scheme_type === "single_payment"
-                    ? "💰 Single Payment"
-                    : "📅 Installment Plan"}
+                    ? " Single Payment"
+                    : " Installment Plan"}
                 </Badge>
               </div>
 
@@ -645,19 +663,59 @@ export default function Schemes() {
               {/* Actions */}
               <div className="flex justify-end items-center gap-1 pt-2 border-t border-gray-200">
                 <EditSchemeDialog scheme={scheme} onSuccess={fetchData} />
-                <Button
+                {/* <Button
                   variant="ghost"
                   size="icon"
                   className="h-7 w-7 rounded-full text-red-500 hover:bg-red-50 hover:text-red-700 transition-colors"
                   onClick={() => handleDelete(scheme.id)}
                 >
                   <Trash className="w-3.5 h-3.5" />
-                </Button>
+                </Button> */}
               </div>
             </div>
           </Card>
         ))}
       </div>
+
+
+      {/* --- Pagination Controls --- */}
+      {totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+          >
+            Prev
+          </Button>
+
+          {[...Array(totalPages)].map((_, i) => (
+            <Button
+              key={i}
+              variant={currentPage === i + 1 ? "default" : "outline"}
+              size="sm"
+              className={
+                currentPage === i + 1
+                  ? "bg-blue-600 text-white"
+                  : "text-gray-600"
+              }
+              onClick={() => handlePageChange(i + 1)}
+            >
+              {i + 1}
+            </Button>
+          ))}
+
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {schemes.length === 0 && (
         <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">

@@ -39,7 +39,7 @@ interface ProjectFormData {
   long_description: string;
   status: "available" | "sold_out" | "coming_soon";
   base_price: number;
-  property_type: "commercial" | "residential" | "plot" | "land" | "mixed_use";
+  property_type: "commercial" | "residential" | "plot";
   total_units: number;
   available_units: number;
   sold_units: number;
@@ -50,6 +50,7 @@ interface ProjectFormData {
   floor_number: number;
   project_code: string;
   building_permission: string;
+  is_active: boolean,
 }
 
 export function EditProjectDialog({
@@ -76,6 +77,7 @@ export function EditProjectDialog({
     floor_number: 1,
     project_code: "",
     building_permission: "",
+    is_active: true,
   });
 
   const [existingImages, setExistingImages] = useState<
@@ -106,6 +108,7 @@ export function EditProjectDialog({
         floor_number: project.floor_number || 1,
         project_code: project.project_code || "",
         building_permission: project.building_permission || "",
+        is_active: project.is_active ?? true,
       });
 
       // Set existing images
@@ -121,15 +124,16 @@ export function EditProjectDialog({
       // Prepare the update data
       const updateData = {
         ...formData,
-        // Combine existing images (minus deleted ones) with new images
         gallery_images: [
           ...existingImages.filter((img) => !imagesToDelete.includes(img.url)),
           ...newImages.map((file) => ({
             url: URL.createObjectURL(file), // This will be replaced with actual URLs after upload
             filename: file.name,
-          })),
+        })),
         ],
       };
+      
+
 
       await projectApi.updateProject(project.id, updateData, newImages);
 
@@ -200,10 +204,6 @@ export function EditProjectDialog({
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "plot":
         return "bg-amber-100 text-amber-800 border-amber-200";
-      case "land":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      case "mixed_use":
-        return "bg-indigo-100 text-indigo-800 border-indigo-200";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
     }
@@ -315,7 +315,7 @@ export function EditProjectDialog({
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50 bg-white shadow-lg">
                     <SelectItem value="available">Available</SelectItem>
                     <SelectItem value="sold_out">Sold Out</SelectItem>
                     <SelectItem value="coming_soon">Coming Soon</SelectItem>
@@ -337,12 +337,10 @@ export function EditProjectDialog({
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50 bg-white shadow-lg">
                     <SelectItem value="residential">Residential</SelectItem>
                     <SelectItem value="commercial">Commercial</SelectItem>
                     <SelectItem value="plot">Plot</SelectItem>
-                    <SelectItem value="land">Land</SelectItem>
-                    <SelectItem value="mixed_use">Mixed Use</SelectItem>
                   </SelectContent>
                 </Select>
                 <Badge className={getPropertyTypeColor(formData.property_type)}>
@@ -366,7 +364,7 @@ export function EditProjectDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="total_units">Total Units *</Label>
+                <Label htmlFor="total_units">Total Sqft *</Label>
                 <Input
                   id="total_units"
                   type="number"
@@ -379,7 +377,7 @@ export function EditProjectDialog({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="available_units">Available Units *</Label>
+                <Label htmlFor="available_units">Available Sqft *</Label>
                 <Input
                   id="available_units"
                   type="number"
@@ -428,8 +426,7 @@ export function EditProjectDialog({
                   handleChange("has_rental_income", checked)
                 }
                 disabled={
-                  formData.property_type === "plot" ||
-                  formData.property_type === "land"
+                  formData.property_type === "plot"
                 }
               />
               <div className="flex-1">
@@ -445,8 +442,7 @@ export function EditProjectDialog({
               </div>
             </div>
 
-            {(formData.property_type === "plot" ||
-              formData.property_type === "land") && (
+            {(formData.property_type === "plot") && (
               <Alert className="bg-amber-50 border-amber-200 text-amber-800">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
@@ -475,17 +471,17 @@ export function EditProjectDialog({
                     return (
                       <div
                         key={index}
-                        className={`relative group rounded-lg p-2 border-2 ${
-                          isMarkedForDeletion
-                            ? "border-red-300 bg-red-50 opacity-60"
-                            : "border-gray-200 bg-gray-50"
-                        }`}
+                        className={`relative group rounded-lg p-2 border-2 ${isMarkedForDeletion
+                          ? "border-red-300 bg-red-50 hidden"
+                          : "border-gray-200 bg-gray-50"
+                          }`}
                       >
                         <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
                           <img
                             src={image.url}
                             alt={`Project image ${index + 1}`}
-                            className="object-cover rounded-md w-full h-full"
+                            className={`object-cover rounded-md w-full h-full ${isMarkedForDeletion ? "hidden" : ""
+                              }`}
                           />
                         </div>
                         <div className="mt-2">
@@ -512,13 +508,13 @@ export function EditProjectDialog({
                             <X className="h-3 w-3" />
                           )}
                         </Button>
-                        {isMarkedForDeletion && (
+                        {/* {isMarkedForDeletion && (
                           <div className="absolute inset-0 flex items-center justify-center">
                             <Badge variant="destructive" className="text-xs">
                               To be deleted
                             </Badge>
                           </div>
-                        )}
+                        )} */}
                       </div>
                     );
                   })}
@@ -593,6 +589,26 @@ export function EditProjectDialog({
             </div>
           </div>
 
+
+          {/* Active / Inactive Toggle */}
+          <div className="p-4 border rounded-lg bg-white">
+            <div className="flex items-center space-x-3">
+              <Switch
+                checked={formData.is_active}
+                onCheckedChange={(checked) => handleChange("is_active", checked)}
+              />
+              <div>
+                <Label className="text-sm font-medium">
+                  Project Active Status
+                </Label>
+                <p className="text-xs text-gray-500">
+                  Toggle to activate or deactivate this project
+                </p>
+              </div>
+            </div>
+          </div>
+
+
           {/* Action Buttons */}
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <Button
@@ -623,3 +639,5 @@ export function EditProjectDialog({
     </Dialog>
   );
 }
+
+

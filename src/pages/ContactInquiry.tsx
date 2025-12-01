@@ -23,6 +23,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { format } from "date-fns";
+import { inquiryApi } from "@/api/apiService";
 
 interface Inquiry {
   id: string;
@@ -44,6 +45,13 @@ const ContactInquiry = () => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10); // backend returns 10 anyway
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total_records: 0,
+  });
 
   // Toast notification state
   const [toast, setToast] = useState({
@@ -92,6 +100,7 @@ const ContactInquiry = () => {
     }
   };
 
+
   const fetchInquiries = async () => {
     try {
       setLoading(true);
@@ -100,6 +109,8 @@ const ContactInquiry = () => {
       const query = new URLSearchParams();
       if (status && status !== "all") query.append("status", status);
       if (startDate) query.append("start_date", startDate);
+      query.append("page", page.toString());
+      query.append("limit", limit.toString());
 
       const apiUrl = `http://localhost:8001/api/contact-inquiry/?${query.toString()}`;
       console.log("Fetching:", apiUrl);
@@ -109,14 +120,15 @@ const ContactInquiry = () => {
           Authorization: `Bearer ${localStorage.getItem("admin_token") || ""}`,
         },
       });
+
       if (!res.ok) throw new Error(`HTTP error: ${res.status}`);
 
       const data = await res.json();
-      console.log("Response:", data);
+
       setInquiries(data.data || []);
+      setPagination(data.meta);
     } catch (err: any) {
-      console.error("Error fetching inquiries:", err);
-      setError(`Failed to fetch inquiries: ${err.message}`);
+      setError(err.message);
       showToast("Failed to fetch inquiries", "error");
     } finally {
       setLoading(false);
@@ -126,7 +138,7 @@ const ContactInquiry = () => {
   useEffect(() => {
     console.log("Fetching inquiries on mount...");
     fetchInquiries();
-  }, []);
+  }, [page]);
 
   const updateInquiryStatus = async (inquiryId: string, newStatus: string) => {
     setUpdatingId(inquiryId);
@@ -137,9 +149,8 @@ const ContactInquiry = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${
-              localStorage.getItem("admin_token") || ""
-            }`,
+            Authorization: `Bearer ${localStorage.getItem("admin_token") || ""
+              }`,
           },
           body: JSON.stringify({ status: newStatus }),
         }
@@ -157,10 +168,10 @@ const ContactInquiry = () => {
         prev.map((inquiry) =>
           inquiry.id === inquiryId
             ? {
-                ...inquiry,
-                status: newStatus,
-                follow_up_date: data.data.follow_up_date,
-              }
+              ...inquiry,
+              status: newStatus,
+              follow_up_date: data.data.follow_up_date,
+            }
             : inquiry
         )
       );
@@ -170,10 +181,10 @@ const ContactInquiry = () => {
         setSelectedInquiry((prev) =>
           prev
             ? {
-                ...prev,
-                status: newStatus,
-                follow_up_date: data.data.follow_up_date,
-              }
+              ...prev,
+              status: newStatus,
+              follow_up_date: data.data.follow_up_date,
+            }
             : null
         );
       }
@@ -369,28 +380,25 @@ const ContactInquiry = () => {
                 onClick={() => openInquiryDetails(item)}
               >
                 <div
-                  className={`h-2 ${
-                    item.status === "converted"
-                      ? "bg-gradient-to-r from-green-500 to-emerald-600"
-                      : "bg-gradient-to-r from-blue-500 to-cyan-600"
-                  }`}
+                  className={`h-2 ${item.status === "converted"
+                    ? "bg-gradient-to-r from-green-500 to-emerald-600"
+                    : "bg-gradient-to-r from-blue-500 to-cyan-600"
+                    }`}
                 ></div>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`p-2 rounded-lg ${
-                          item.status === "converted"
-                            ? "bg-gradient-to-br from-green-100 to-emerald-100"
-                            : "bg-gradient-to-br from-blue-100 to-cyan-100"
-                        }`}
+                        className={`p-2 rounded-lg ${item.status === "converted"
+                          ? "bg-gradient-to-br from-green-100 to-emerald-100"
+                          : "bg-gradient-to-br from-blue-100 to-cyan-100"
+                          }`}
                       >
                         <User
-                          className={`w-5 h-5 ${
-                            item.status === "converted"
-                              ? "text-green-600"
-                              : "text-blue-600"
-                          }`}
+                          className={`w-5 h-5 ${item.status === "converted"
+                            ? "text-green-600"
+                            : "text-blue-600"
+                            }`}
                         />
                       </div>
                       <div>
@@ -457,7 +465,7 @@ const ContactInquiry = () => {
                         ) : (
                           <>
                             <CheckCircle className="w-4 h-4 mr-2" />
-                            Mark as Converted
+                            Mark as Reviewed
                           </>
                         )}
                       </Button>
@@ -470,16 +478,54 @@ const ContactInquiry = () => {
         )}
       </div>
 
+      {/* Pagination */}
+      {pagination.total_records > 0 && (
+        <div className="flex justify-center items-center gap-4 mt-10 mb-6">
+
+          {/* Previous Button */}
+          <Button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="px-6 py-2 bg-emerald-600 text-white rounded-lg disabled:opacity-50"
+          >
+            Previous
+          </Button>
+
+          {/* Page Indicator */}
+          <span className="text-gray-700 font-medium">
+            Page {pagination.page} of{" "}
+            {Math.ceil(pagination.total_records / pagination.limit)}
+          </span>
+
+          {/* Next Button */}
+          <Button
+            onClick={() =>
+              setPage((prev) =>
+                prev < Math.ceil(pagination.total_records / pagination.limit)
+                  ? prev + 1
+                  : prev
+              )
+            }
+            disabled={
+              page === Math.ceil(pagination.total_records / pagination.limit)
+            }
+            className="px-6 py-2 bg-emerald-600 text-white rounded-lg disabled:opacity-50"
+          >
+            Next
+          </Button>
+        </div>
+      )}
+
+
       {/* Inquiry Details Modal */}
       {isDetailsOpen && selectedInquiry && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div
-              className={`h-2 ${
-                selectedInquiry.status === "converted"
-                  ? "bg-gradient-to-r from-green-500 to-emerald-600"
-                  : "bg-gradient-to-r from-blue-500 to-cyan-600"
-              }`}
+              className={`h-2 ${selectedInquiry.status === "converted"
+                ? "bg-gradient-to-r from-green-500 to-emerald-600"
+                : "bg-gradient-to-r from-blue-500 to-cyan-600"
+                }`}
             ></div>
 
             <div className="px-6 py-4 flex justify-between items-center border-b">
@@ -498,18 +544,16 @@ const ContactInquiry = () => {
               {/* Header */}
               <div className="flex items-start gap-4">
                 <div
-                  className={`p-3 rounded-lg ${
-                    selectedInquiry.status === "converted"
-                      ? "bg-gradient-to-br from-green-100 to-emerald-100"
-                      : "bg-gradient-to-br from-blue-100 to-cyan-100"
-                  }`}
+                  className={`p-3 rounded-lg ${selectedInquiry.status === "converted"
+                    ? "bg-gradient-to-br from-green-100 to-emerald-100"
+                    : "bg-gradient-to-br from-blue-100 to-cyan-100"
+                    }`}
                 >
                   <User
-                    className={`w-6 h-6 ${
-                      selectedInquiry.status === "converted"
-                        ? "text-green-600"
-                        : "text-blue-600"
-                    }`}
+                    className={`w-6 h-6 ${selectedInquiry.status === "converted"
+                      ? "text-green-600"
+                      : "text-blue-600"
+                      }`}
                   />
                 </div>
                 <div className="flex-1">
@@ -606,6 +650,7 @@ const ContactInquiry = () => {
                   </Button>
                 </div>
               )}
+
             </div>
           </div>
         </div>

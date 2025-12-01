@@ -185,7 +185,7 @@ export function UserProfileModal({
                         PAN Number
                       </p>
                       <p className="font-medium font-mono text-sm">
-                        {user.profile.pan_number}
+                        {user.profile.pan_number || "------"}
                       </p>
                     </div>
                     <div>
@@ -195,7 +195,23 @@ export function UserProfileModal({
                       <p className="font-medium font-mono text-sm">
                         {user.profile.aadhar_number
                           .replace(/(\d{4})/g, "$1 ")
-                          .trim()}
+                          .trim() || "------"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        Passport Number
+                      </p>
+                      <p className="font-medium font-mono text-sm">
+                        {user.profile.passport_number || "------"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">
+                        GST Number
+                      </p>
+                      <p className="font-medium font-mono text-sm">
+                        {user.profile.gst_number || "------"}
                       </p>
                     </div>
                   </div>
@@ -221,32 +237,48 @@ export function UserProfileModal({
             </>
           )}
 
-          {/* Account Timeline */}
+
+          {/* Account Information */}
           <Card className="p-4">
-            <h4 className="font-semibold mb-3">Account Timeline</h4>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Joined:</span>
-                <span className="font-medium">
-                  {new Date(user.created_at).toLocaleDateString("en-IN", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Last Updated:</span>
-                <span className="font-medium">
-                  {new Date(user.updated_at).toLocaleDateString("en-IN", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </span>
-              </div>
+            <h4 className="font-semibold mb-3">Bank Details</h4>
+            <div className="space-y-4">
+
+
+              {/* Bank Details */}
+              {user.profile?.account_details && (
+                <div>
+                  {/* <h5 className="font-medium text-sm mb-2">Bank Details</h5> */}
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Account Holder:</span>
+                      <span className="font-medium">
+                        {user.profile.account_details.account_holder_name || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Bank Name:</span>
+                      <span className="font-medium">
+                        {user.profile.account_details.bank_account_name || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Account Number:</span>
+                      <span className="font-medium font-mono">
+                        {user.profile.account_details.account_number || "—"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">IFSC Code:</span>
+                      <span className="font-medium font-mono">
+                        {user.profile.account_details.ifsc_code || "—"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
+
         </div>
       </DialogContent>
     </Dialog>
