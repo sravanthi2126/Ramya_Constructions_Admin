@@ -23,31 +23,20 @@ export interface UserProfile {
   annual_income?: string;
   pan_number: string;
   aadhar_number: string;
+  passport_number?: string;
+  gst_number?: string;
+  account_details: {
+    account_holder_name: string;
+    bank_account_name: string;
+    account_number: string;
+    ifsc_code: string;
+  };
   kyc_verification_status: 'pending' | 'partial' | 'verified' | 'rejected';
   kyc_verified_at?: string;
   created_at: string;
   updated_at: string;
 }
 
-// export interface Project {
-//   [x: string]: string;
-//   [x: string]: number;
-//   [x: string]: boolean;
-//   long_description: string;
-//   id: string;
-//   title: string;
-//   location: string;
-//   description?: string;
-//   status: 'available' | 'sold_out' | 'coming_soon';
-//   base_price: number;
-//   property_type: 'commercial' | 'residential' | 'plot' | 'land' | 'mixed_use';
-//   total_units: number;
-//   available_units: number;
-//   sold_units: number;
-//   rera_number?: string;
-//   created_at: string;
-//   is_active: boolean;
-// }
 
 export interface Project {
   [key: string]: string | number | boolean | Project | undefined; // include types you need
@@ -105,7 +94,10 @@ export interface PurchasedUnit {
   id: string;
   unit_number: string;
   project_id: string;
+  project_name: string;
   scheme_id: string;
+  scheme_name: string;
+  scheme_type: string;
   purchaser_user_id: string;
   user_profile_id: string | null;
   is_joint_ownership: boolean;
@@ -113,6 +105,8 @@ export interface PurchasedUnit {
   number_of_units: number;
   total_area_sqft: number;
   total_investment: number;
+  primary_purchaser_name: string;
+  joint_purchaser_name: string | null;
   purchase_date: string;
   monthly_rental: number;
   rental_start_date: string;

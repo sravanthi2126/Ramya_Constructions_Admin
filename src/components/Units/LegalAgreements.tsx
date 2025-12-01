@@ -4,7 +4,7 @@ import {
   LegalAgreement,
   CreateLegalAgreementRequest,
   UpdateLegalAgreementRequest,
-} from "../services/apiService";
+} from "@/api/apiService";
 
 interface LegalAgreementsProps {
   unitId?: string;
@@ -41,7 +41,7 @@ const LegalAgreements: React.FC<LegalAgreementsProps> = ({ unitId }) => {
       if (unitId) {
         response = await legalAgreementsApi.getAgreementsByUnitId(unitId);
       } else {
-        response = await legalAgreementsApi.getAllAgreements(1, 100);
+        response = await legalAgreementsApi.getAllAgreements();
       }
 
       if (response.success && response.data) {
@@ -352,7 +352,7 @@ const LegalAgreements: React.FC<LegalAgreementsProps> = ({ unitId }) => {
                         <span className="font-medium">Unit ID:</span>{" "}
                         {agreement.unit_id}
                       </div>
-                      <div>
+                      {/* <div>
                         <span className="font-medium">Agreement Date:</span>{" "}
                         {new Date(
                           agreement.agreement_date
@@ -361,10 +361,10 @@ const LegalAgreements: React.FC<LegalAgreementsProps> = ({ unitId }) => {
                       <div>
                         <span className="font-medium">Valid Until:</span>{" "}
                         {new Date(agreement.valid_until).toLocaleDateString()}
-                      </div>
+                      </div> */}
                     </div>
 
-                    {agreement.signatories &&
+                    {/* {agreement.signatories &&
                       agreement.signatories.length > 0 && (
                         <div className="mb-3">
                           <span className="text-sm font-medium text-gray-700">
@@ -381,7 +381,7 @@ const LegalAgreements: React.FC<LegalAgreementsProps> = ({ unitId }) => {
                             ))}
                           </div>
                         </div>
-                      )}
+                      )} */}
 
                     <div className="text-xs text-gray-500">
                       Uploaded:{" "}
@@ -557,42 +557,6 @@ const LegalAgreements: React.FC<LegalAgreementsProps> = ({ unitId }) => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Agreement Date *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.agreement_date}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        agreement_date: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Valid Until *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.valid_until}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        valid_until: e.target.value,
-                      }))
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status *
                   </label>
                   <select
@@ -627,45 +591,6 @@ const LegalAgreements: React.FC<LegalAgreementsProps> = ({ unitId }) => {
                   <p className="text-xs text-gray-500 mt-1">
                     Supported formats: PDF, DOC, DOCX, JPG, JPEG, PNG
                   </p>
-                </div>
-              </div>
-
-              {/* Signatories */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Signatories
-                  </label>
-                  <button
-                    type="button"
-                    onClick={addSignatory}
-                    className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  >
-                    + Add Signatory
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {formData.signatories.map((signatory, index) => (
-                    <div key={index} className="flex space-x-2">
-                      <input
-                        type="text"
-                        value={signatory}
-                        onChange={(e) => updateSignatory(index, e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter signatory name"
-                      />
-                      {formData.signatories.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeSignatory(index)}
-                          className="px-3 py-2 text-red-600 hover:text-red-800 border border-red-300 rounded-md"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  ))}
                 </div>
               </div>
 

@@ -368,7 +368,7 @@ export default function Projects() {
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent className="z-50">
+                  <SelectContent className="z-50 bg-white shadow-lg">
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="available">Available</SelectItem>
                     <SelectItem value="sold_out">Sold Out</SelectItem>
@@ -386,13 +386,11 @@ export default function Projects() {
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Property Type" />
                   </SelectTrigger>
-                  <SelectContent className="z-50">
+                  <SelectContent className="z-50 bg-white shadow-lg">
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="commercial">Commercial</SelectItem>
                     <SelectItem value="residential">Residential</SelectItem>
                     <SelectItem value="plot">Plot</SelectItem>
-                    <SelectItem value="land">Land</SelectItem>
-                    <SelectItem value="mixed_use">Mixed Use</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -401,15 +399,15 @@ export default function Projects() {
               {(searchTerm ||
                 statusFilter !== "all" ||
                 propertyTypeFilter !== "all") && (
-                <Button
-                  variant="outline"
-                  onClick={clearFilters}
-                  className="flex items-center gap-2 w-full sm:w-auto"
-                >
-                  <X className="w-4 h-4" />
-                  Clear Filters
-                </Button>
-              )}
+                  <Button
+                    variant="outline"
+                    onClick={clearFilters}
+                    className="flex items-center gap-2 w-full sm:w-auto"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear Filters
+                  </Button>
+                )}
             </div>
           </div>
         </div>
@@ -469,13 +467,13 @@ export default function Projects() {
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Base Price:</span>
                   <div className="flex items-center font-semibold">
-                    <IndianRupee className="w-4 h-4 mr-1" />
+                    {/* <IndianRupee className="w-4 h-4 mr-1" /> */}
                     {formatPrice(project.base_price)}
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Units:</span>
+                  <span className="text-muted-foreground">Sqft:</span>
                   <span className="font-medium">
                     {project.available_units} / {project.total_units} available
                   </span>
@@ -526,9 +524,8 @@ export default function Projects() {
                   <div
                     className="bg-primary h-2 rounded-full transition-all duration-300"
                     style={{
-                      width: `${
-                        (project.sold_units / project.total_units) * 100
-                      }%`,
+                      width: `${(project.sold_units / project.total_units) * 100
+                        }%`,
                     }}
                   />
                 </div>
@@ -556,7 +553,7 @@ export default function Projects() {
                     Edit
                   </Button>
                 </div>
-                <Button
+                {/* <Button
                   variant="destructive"
                   size="sm"
                   className="w-full"
@@ -567,7 +564,7 @@ export default function Projects() {
                   {isDeleting && projectToDelete === project.id
                     ? "Deleting..."
                     : "Delete"}
-                </Button>
+                </Button> */}
               </div>
             </div>
           </Card>

@@ -83,6 +83,9 @@ export function AdminLayout() {
                   <User className="w-5 h-5 text-white" />
                 )}
               </div>
+              <p className="text-muted-foreground mt-1">
+                {user?.name}
+              </p>
               <ChevronDown
                 className={cn(
                   "w-5 h-5 text-gray-600 transition-transform duration-200",
@@ -121,13 +124,13 @@ export function AdminLayout() {
 
                 {/* Menu Items */}
                 <div className="py-2">
-                  <button
+                  {/* <button
                     onClick={handleProfile}
                     className="flex items-center w-full px-5 py-3 text-sm text-gray-700 hover:bg-blue-50/70 transition-colors duration-200 group"
                   >
                     <User className="w-5 h-5 mr-4 text-gray-500 group-hover:text-blue-600 transition-colors" />
                     View Profile
-                  </button>
+                  </button> */}
                   <button
                     onClick={handleLogout}
                     className="flex items-center w-full px-5 py-3 text-sm text-red-600 hover:bg-red-50/70 transition-colors duration-200 group"
