@@ -1,8 +1,26 @@
 // apiService.ts
 // Updated with full Project interface and write operations for projects
 
-const API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/admins';
-const API_BASE_URL_READ = 'http://127.0.0.1:8001/api/admin';
+// Base URLs
+export const BASE_URL_WRITE = 'http://127.0.0.1:8000';
+export const BASE_URL_READ = 'http://127.0.0.1:8001';
+
+// API Paths
+export const API_PATHS = {
+  ADMINS: '/api/admins',
+  ADMIN: '/api/admin',
+  PROJECTS: '/api/projects',
+  SCHEMES: '/api/schemes',
+  INVESTMENT_SCHEMES: '/api/admin/investment-schemes',
+  PURCHASED_UNIT: '/api/purchased-unit',
+  PAYMENTS: '/api/payments',
+  LEGAL_AGREEMENTS: '/api/legal-agreements',
+  LEGAL_AGREEMENTS_LIST: '/api/legal-agreements/list',
+  CONTACT_INQUIRY: '/api/contact-inquiry',
+  USER_PROFILES: '/api/admin/user_profiles',
+  USERMANAGEMENT: '/api/admin/usermanagement',
+  AGENTS: '/api/admin/agents',
+} as const;
 
 export interface Admin {
   id: string;
@@ -68,6 +86,28 @@ export interface DashboardSummaryResponse {
   monthly_investment: MonthlyInvestment;
 }
 
+export interface ContactInquiry {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  message: string;
+  status: "new" | "in_progress" | "converted" | "closed";
+  follow_up_date: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+
+export interface ContactInquiryListResponse {
+  message: string;
+  meta: {
+    page: number;
+    limit: number;
+    total_records: number;
+  };
+  data: ContactInquiry[];
+}
 
 class ApiError extends Error {
   constructor(
@@ -80,12 +120,12 @@ class ApiError extends Error {
   }
 }
 
-const getAuthHeader = () => {
+export const getAuthHeader = () => {
   const token = localStorage.getItem('admin_token');
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-const handleResponse = async <T,>(response: Response): Promise<T> => {
+export const handleResponse = async <T,>(response: Response): Promise<T> => {
   let data: any;
 
   try {
@@ -108,7 +148,7 @@ const handleResponse = async <T,>(response: Response): Promise<T> => {
   return data;
 };
 
-const handleNetworkError = (error: any): never => {
+export const handleNetworkError = (error: any): never => {
   if (error instanceof ApiError) {
     throw error;
   }
@@ -127,11 +167,11 @@ const handleNetworkError = (error: any): never => {
 };
 
 export const adminApi = {
-  // Create Admin (Port 8000)
+  // Create Admin (Write)
   async createAdmin(data: CreateAdminRequest): Promise<ApiResponse<Admin>> {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`${API_BASE_URL_WRITE}/create`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.ADMINS}/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -146,14 +186,13 @@ export const adminApi = {
     }
   },
 
-  // Update Admin (Port 8000)
-  // Update Admin (Port 8000)
+  // Update Admin (Write)
   async updateAdmin(
     adminId: string,
     data: UpdateAdminRequest
   ): Promise<ApiResponse<Admin>> {
     try {
-      const response = await fetch(`${API_BASE_URL_WRITE}/${adminId}`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.ADMINS}/${adminId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -168,10 +207,10 @@ export const adminApi = {
     }
   },
 
-  // Delete Admin (Port 8000)
+  // Delete Admin (Write)
   async deleteAdmin(adminId: string): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL_WRITE}/${adminId}`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.ADMINS}/${adminId}`, {
         method: 'DELETE',
         headers: getAuthHeader(),
       });
@@ -182,14 +221,14 @@ export const adminApi = {
     }
   },
 
-  // Get All Admins (Port 8001)
+  // Get All Admins (Read)
   async getAllAdmins(
     page: number = 1,
     limit: number = 10
   ): Promise<AdminListResponse> {
     try {
       const response = await fetch(
-        `${API_BASE_URL_READ}/all?page=${page}&limit=${limit}`,
+        `${BASE_URL_READ}${API_PATHS.ADMIN}/all?page=${page}&limit=${limit}`,
         {
           method: 'GET',
           headers: getAuthHeader(),
@@ -202,10 +241,10 @@ export const adminApi = {
     }
   },
 
-  // Get Admin by ID (Port 8001)
+  // Get Admin by ID (Read)
   async getAdminById(adminId: string): Promise<ApiResponse<Admin>> {
     try {
-      const response = await fetch(`${API_BASE_URL_READ}/${adminId}`, {
+      const response = await fetch(`${BASE_URL_READ}${API_PATHS.ADMIN}/${adminId}`, {
         method: 'GET',
         headers: getAuthHeader(),
       });
@@ -216,10 +255,10 @@ export const adminApi = {
     }
   },
 
-  // Get Current Admin Profile (Port 8001)
+  // Get Current Admin Profile (Read)
   async getMyProfile(): Promise<ApiResponse<Admin>> {
     try {
-      const response = await fetch(`${API_BASE_URL_READ}/profile/me`, {
+      const response = await fetch(`${BASE_URL_READ}${API_PATHS.ADMIN}/profile/me`, {
         method: 'GET',
         headers: getAuthHeader(),
       });
@@ -229,9 +268,10 @@ export const adminApi = {
       return handleNetworkError(error);
     }
   },
+
   async getSummary(): Promise<DashboardSummaryResponse> {
     try {
-      const response = await fetch(`${API_BASE_URL_READ}/dashboard/summary`, {
+      const response = await fetch(`${BASE_URL_READ}${API_PATHS.ADMIN}/dashboard/summary`, {
         method: "GET",
         headers: getAuthHeader(),
       });
@@ -311,15 +351,11 @@ export interface UpdateSchemeRequest {
   is_active: boolean;
 }
 
-// Constants for Scheme APIs
-const SCHEME_API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/schemes';
-const SCHEME_API_BASE_URL_READ = 'http://127.0.0.1:8001/api/admin/investment-schemes';
-
 export const schemeApi = {
-  // Get All Schemes (Port 8001) - with optional project_id filter
+  // Get All Schemes (Read) - with optional project_id filter
   async getAllSchemes(
     page: number = 1,
-    limit: number = 10,
+    limit: number = 9,
     project_id?: string
   ): Promise<SchemeListResponse> {
     try {
@@ -333,7 +369,7 @@ export const schemeApi = {
       }
 
       const response = await fetch(
-        `${SCHEME_API_BASE_URL_READ}/all?${params.toString()}`,
+        `${BASE_URL_READ}${API_PATHS.INVESTMENT_SCHEMES}/all?${params.toString()}`,
         {
           method: 'GET',
           headers: getAuthHeader(),
@@ -346,7 +382,7 @@ export const schemeApi = {
     }
   },
 
-  // Get Schemes by Project ID (Port 8001)
+  // Get Schemes by Project ID (Read)
   async getAllSchemesByProject(
     project_id: string,
     page: number = 1,
@@ -354,7 +390,7 @@ export const schemeApi = {
   ): Promise<SchemeListResponse> {
     try {
       const params = new URLSearchParams({ project_id, page: page.toString(), limit: limit.toString() });
-      const response = await fetch(`${SCHEME_API_BASE_URL_READ}/project?${params.toString()}`, {
+      const response = await fetch(`${BASE_URL_READ}${API_PATHS.INVESTMENT_SCHEMES}/project?${params.toString()}`, {
         method: 'GET',
         headers: getAuthHeader(),
       });
@@ -365,10 +401,10 @@ export const schemeApi = {
     }
   },
 
-  // Get Scheme by ID (Port 8001)
+  // Get Scheme by ID (Read)
   async getSchemeById(schemeId: string): Promise<SchemeResponse> {
     try {
-      const response = await fetch(`${SCHEME_API_BASE_URL_READ}/${schemeId}`, {
+      const response = await fetch(`${BASE_URL_READ}${API_PATHS.INVESTMENT_SCHEMES}/${schemeId}`, {
         method: 'GET',
         headers: getAuthHeader(),
       });
@@ -379,11 +415,11 @@ export const schemeApi = {
     }
   },
 
-  // Create Scheme (Port 8000)
+  // Create Scheme (Write)
   async createScheme(data: CreateSchemeRequest): Promise<ApiResponse> {
     try {
       const token = localStorage.getItem('admin_token');
-      const response = await fetch(`${SCHEME_API_BASE_URL_WRITE}/create`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.SCHEMES}/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -398,13 +434,13 @@ export const schemeApi = {
     }
   },
 
-  // Update Scheme (Port 8000)
+  // Update Scheme (Write)
   async updateScheme(
     schemeId: string,
     data: UpdateSchemeRequest
   ): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${SCHEME_API_BASE_URL_WRITE}/${schemeId}`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.SCHEMES}/${schemeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -419,10 +455,10 @@ export const schemeApi = {
     }
   },
 
-  // Delete Scheme (Port 8000)
+  // Delete Scheme (Write)
   async deleteScheme(schemeId: string): Promise<ApiResponse> {
     try {
-      const response = await fetch(`${SCHEME_API_BASE_URL_WRITE}/${schemeId}`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.SCHEMES}/${schemeId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -437,6 +473,7 @@ export const schemeApi = {
     }
   },
 };
+
 export interface JointOwner {
   user_profile_id: string;
   relation: string;
@@ -507,178 +544,8 @@ export interface PaymentHistoryResponse {
   } | null;
 }
 
-
-// Constants for Purchased Units APIs
-const PURCHASED_UNIT_API_BASE_URL = 'http://127.0.0.1:8001/api/purchased-unit';
-const PURCHASED_UNIT_API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/purchased-unit';
-const booking_numberApi = 'http://127.0.0.1:8001/api/payments';
-
-export const purchasedUnitApi = {
-  // Get purchased unit by unit number
-  async getByUnitNumber(unitNumber: string): Promise<PurchasedUnit> {
-    try {
-      const response = await fetch(`${PURCHASED_UNIT_API_BASE_URL}/by-unit-number/${unitNumber}`, {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-          ...getAuthHeader(),
-        }
-      });
-
-      const data: PurchasedUnitResponse = await handleResponse<PurchasedUnitResponse>(response);
-      return data.data as PurchasedUnit;
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-
-  // Get purchased units by user ID
-  async getByUserId(userId: string): Promise<PurchasedUnit[]> {
-    try {
-      const response = await fetch(`${PURCHASED_UNIT_API_BASE_URL}/by-user/${userId}`, {
-        method: 'GET',
-        headers: {
-          'accept': 'application/json',
-          ...getAuthHeader(),
-        }
-      });
-
-      const data: PurchasedUnitResponse = await handleResponse<PurchasedUnitResponse>(response);
-      return data.data as PurchasedUnit[];
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-
-  // Get all purchased units
-  async getAll(page: number = 1, pageSize: number = 10): Promise<{
-    data: PurchasedUnit[];
-    total: number;
-    page: number;
-    pageSize: number;
-  }> {
-    try {
-      const response = await fetch(
-        `${PURCHASED_UNIT_API_BASE_URL}/all?page=${page}&page_size=${pageSize}`,
-        {
-          method: 'GET',
-          headers: {
-            'accept': 'application/json',
-            ...getAuthHeader(),
-          }
-        }
-      );
-
-      const result = await handleResponse<{
-        message: string;
-        data: PurchasedUnit[];
-        total_purchased_units: number;
-        page: number;
-        page_size: number;
-      }>(response);
-
-      return {
-        data: result.data,
-        total: result.total_purchased_units,
-        page: result.page,
-        pageSize: result.page_size,
-      };
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-
-  // Create purchased unit
-  async create(data: CreateUnitRequest): Promise<ApiResponse> {
-    try {
-      const response = await fetch(`${PURCHASED_UNIT_API_BASE_URL}/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'accept': 'application/json',
-          ...getAuthHeader(),
-        },
-        body: JSON.stringify(data)
-      });
-
-      return handleResponse<ApiResponse>(response);
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-  // Get projects for dropdown
-  async getProjectsForDropdown(): Promise<{ id: string, title: string }[]> {
-    try {
-      const response = await projectApi.getAllProjects(1, 100);
-      return response.projects.map(project => ({
-        id: project.id,
-        title: project.title
-      }));
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-
-  // Get schemes for dropdown (by project ID)
-  async getSchemesForDropdown(projectId: string): Promise<{ id: string, scheme_name: string }[]> {
-    try {
-      const response = await schemeApi.getAllSchemesByProject(projectId, 1, 100);
-      return response.schemes.map(scheme => ({
-        id: scheme.id,
-        scheme_name: scheme.scheme_name
-      }));
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-
-  async getAllPaymentsByUnitNumber(unitNumber: string): Promise<PaymentHistoryResponse> {
-    try {
-      const response = await fetch(
-        `${booking_numberApi}/all-payments?unit_number=${encodeURIComponent(unitNumber)}`,
-        {
-          method: 'GET',
-          headers: {
-            'accept': 'application/json',
-            ...getAuthHeader(),
-          },
-        }
-      );
-
-      const data = await handleResponse<PaymentHistoryResponse>(response);
-      return data;
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-  async getProjectsWithSchemes(): Promise<{
-    project_id: string;
-    project_name: string;
-    schemes: { scheme_id: string; scheme_name: string }[];
-  }[]> {
-    try {
-      const response = await fetch(
-        'http://127.0.0.1:8001/api/projects/projects-with-schemes/all',
-        {
-          method: 'GET',
-          headers: {
-            'accept': 'application/json',
-            ...getAuthHeader(),
-          },
-        }
-      );
-
-      const result = await handleResponse<{ projects: any[] }>(response);
-      return result.projects;
-    } catch (error) {
-      return handleNetworkError(error);
-    }
-  },
-
-};
-// Add to your existing apiService.ts
 // -------------------------------------------------------------------------------
-// Legal Agreements API - Updated to match your backend
+// Legal Agreements API
 // -------------------------------------------------------------------------------
 
 export interface LegalAgreement {
@@ -700,7 +567,6 @@ export interface CreateLegalAgreementRequest {
   unit_id: string;
   agreement_type: string;
   document_name: string;
-  // signatories: string[];
   agreement_date: string;
   valid_until: string;
   status: 'draft' | 'executed' | 'signed' | 'pending_signature';
@@ -732,12 +598,8 @@ export interface LegalAgreementListResponse {
   total_pages?: number;
 }
 
-// Constants for Legal Agreements APIs
-const LEGAL_AGREEMENTS_API_BASE_URL_READ = 'http://127.0.0.1:8001/api/legal-agreements/list';
-const LEGAL_AGREEMENTS_API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/legal-agreements';
-
 export const legalAgreementsApi = {
-  // Get All Legal Agreements with filters (Port 8001)
+  // Get All Legal Agreements with filters (Read)
   async getAllAgreements(
     unit_id?: string,
     agreement_type?: string,
@@ -756,7 +618,7 @@ export const legalAgreementsApi = {
       if (status) params.append('status', status);
 
       const response = await fetch(
-        `${LEGAL_AGREEMENTS_API_BASE_URL_READ}/?${params.toString()}`,
+        `${BASE_URL_READ}${API_PATHS.LEGAL_AGREEMENTS_LIST}/?${params.toString()}`,
         {
           method: 'GET',
           headers: {
@@ -772,11 +634,11 @@ export const legalAgreementsApi = {
     }
   },
 
-  // Get Legal Agreements by Unit ID (Port 8001)
+  // Get Legal Agreements by Unit ID (Read)
   async getAgreementsByUnitId(unitId: string): Promise<LegalAgreementListResponse> {
     try {
       const response = await fetch(
-        `${LEGAL_AGREEMENTS_API_BASE_URL_READ}/?unit_id=${unitId}`,
+        `${BASE_URL_READ}${API_PATHS.LEGAL_AGREEMENTS_LIST}/?unit_id=${unitId}`,
         {
           method: 'GET',
           headers: {
@@ -792,11 +654,11 @@ export const legalAgreementsApi = {
     }
   },
 
-  // Get Legal Agreement by ID (Port 8001)
+  // Get Legal Agreement by ID (Read)
   async getAgreementById(agreementId: string): Promise<LegalAgreementResponse> {
     try {
       const response = await fetch(
-        `${LEGAL_AGREEMENTS_API_BASE_URL_READ}/${agreementId}`,
+        `${BASE_URL_READ}${API_PATHS.LEGAL_AGREEMENTS_LIST}/${agreementId}`,
         {
           method: 'GET',
           headers: {
@@ -812,7 +674,7 @@ export const legalAgreementsApi = {
     }
   },
 
-  // Create Legal Agreement (Port 8000)
+  // Create Legal Agreement (Write)
   async createAgreement(
     agreementData: CreateLegalAgreementRequest,
     file: File
@@ -826,11 +688,10 @@ export const legalAgreementsApi = {
       // Append the file
       formData.append("file", file);
 
-      const response = await fetch(`${LEGAL_AGREEMENTS_API_BASE_URL_WRITE}/create`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.LEGAL_AGREEMENTS}/create`, {
         method: "POST",
         headers: {
           ...getAuthHeader(),
-          // Don't set Content-Type for FormData - browser will set it with boundary
         },
         body: formData,
       });
@@ -841,7 +702,7 @@ export const legalAgreementsApi = {
     }
   },
 
-  // Update Legal Agreement (Port 8000)
+  // Update Legal Agreement (Write)
   async updateAgreement(
     agreementId: string,
     agreementData: UpdateLegalAgreementRequest,
@@ -859,7 +720,7 @@ export const legalAgreementsApi = {
       }
 
       const response = await fetch(
-        `${LEGAL_AGREEMENTS_API_BASE_URL_WRITE}/${agreementId}`,
+        `${BASE_URL_WRITE}${API_PATHS.LEGAL_AGREEMENTS}/${agreementId}`,
         {
           method: "PUT",
           headers: {
@@ -875,11 +736,11 @@ export const legalAgreementsApi = {
     }
   },
 
-  // Delete Legal Agreement (Port 8000)
+  // Delete Legal Agreement (Write)
   async deleteAgreement(agreementId: string): Promise<LegalAgreementResponse> {
     try {
       const response = await fetch(
-        `${LEGAL_AGREEMENTS_API_BASE_URL_WRITE}/${agreementId}`,
+        `${BASE_URL_WRITE}${API_PATHS.LEGAL_AGREEMENTS}/${agreementId}`,
         {
           method: "DELETE",
           headers: {
@@ -895,11 +756,11 @@ export const legalAgreementsApi = {
     }
   },
 
-  // Download Agreement File (Port 8001)
+  // Download Agreement File (Read)
   async downloadAgreement(filePath: string): Promise<Blob> {
     try {
       const response = await fetch(
-        `${LEGAL_AGREEMENTS_API_BASE_URL_READ}/download/${encodeURIComponent(filePath)}`,
+        `${BASE_URL_READ}${API_PATHS.LEGAL_AGREEMENTS_LIST}/download/${encodeURIComponent(filePath)}`,
         {
           method: "GET",
           headers: getAuthHeader(),
@@ -916,8 +777,6 @@ export const legalAgreementsApi = {
     }
   },
 };
-
-
 
 // -------------------------------------------------------------------------------
 // Project-related code
@@ -975,7 +834,6 @@ export interface CreateProjectRequest {
   reserved_units: number;
   rera_number: string;
   building_permission: string;
-  // Add these required fields
   floor_number: number;
   project_code: string;
 }
@@ -998,13 +856,12 @@ export interface Project {
   features: string[] | null;
   investment_highlights: string[] | null;
   amenities: Amenity[] | null;
-  total_units: number;
-  available_units: number;
-  sold_units: number;
-  reserved_units: number;
+  total_sqft: number;      // CHANGED from total_units
+  available_sqft: number;  // CHANGED from available_units
+  sold_sqft: number;       // CHANGED from sold_units
+  reserved_sqft: number;   // CHANGED from reserved_units
   rera_number: string;
   building_permission: string;
-  // Add these fields
   floor_number: number;
   project_code: string;
   created_at: string;
@@ -1054,12 +911,8 @@ export interface UpdateProjectRequest {
   is_active?: boolean;
 }
 
-
-const PROJECT_API_BASE_URL_READ = 'http://127.0.0.1:8001/api/projects';
-const PROJECT_API_BASE_URL_WRITE = 'http://127.0.0.1:8000/api/projects';
-
 export const projectApi = {
-  // Get All Projects (Port 8001)
+  // Get All Projects (Read)
   async getAllProjects(
     page: number = 1,
     limit: number = 100,
@@ -1080,7 +933,7 @@ export const projectApi = {
       if (max_price) params.append('max_price', max_price.toString());
 
       const response = await fetch(
-        `${PROJECT_API_BASE_URL_READ}/all?${params.toString()}`,
+        `${BASE_URL_READ}${API_PATHS.PROJECTS}/all?${params.toString()}`,
         {
           method: 'GET',
           headers: getAuthHeader(),
@@ -1093,10 +946,10 @@ export const projectApi = {
     }
   },
 
-  // Get Project by ID (Port 8001)
+  // Get Project by ID (Read)
   async getProjectById(projectId: string): Promise<ProjectResponse> {
     try {
-      const response = await fetch(`${PROJECT_API_BASE_URL_READ}/${projectId}`, {
+      const response = await fetch(`${BASE_URL_READ}${API_PATHS.PROJECTS}/${projectId}`, {
         method: 'GET',
         headers: getAuthHeader(),
       });
@@ -1107,7 +960,7 @@ export const projectApi = {
     }
   },
 
-  // Get Projects by Property Type (Port 8001)
+  // Get Projects by Property Type (Read)
   async getProjectsByPropertyType(
     propertyType: string,
     page: number = 1,
@@ -1115,7 +968,7 @@ export const projectApi = {
   ): Promise<ProjectListResponse> {
     try {
       const response = await fetch(
-        `${PROJECT_API_BASE_URL_READ}/property-type/${propertyType}?page=${page}&limit=${limit}`,
+        `${BASE_URL_READ}${API_PATHS.PROJECTS}/property-type/${propertyType}?page=${page}&limit=${limit}`,
         {
           method: 'GET',
           headers: getAuthHeader(),
@@ -1128,7 +981,7 @@ export const projectApi = {
     }
   },
 
-  // Get Projects by Status (Port 8001)
+  // Get Projects by Status (Read)
   async getProjectsByStatus(
     status: string,
     page: number = 1,
@@ -1140,7 +993,7 @@ export const projectApi = {
         page: page.toString(),
         limit: limit.toString()
       });
-      const response = await fetch(`${PROJECT_API_BASE_URL_READ}/by-status?${params.toString()}`, {
+      const response = await fetch(`${BASE_URL_READ}${API_PATHS.PROJECTS}/by-status?${params.toString()}`, {
         method: 'GET',
         headers: getAuthHeader(),
       });
@@ -1151,7 +1004,7 @@ export const projectApi = {
     }
   },
 
-  // Search Projects (Port 8001)
+  // Search Projects (Read)
   async searchProjects(
     searchTerm: string,
     page: number = 1,
@@ -1163,7 +1016,7 @@ export const projectApi = {
         page: page.toString(),
         limit: limit.toString()
       });
-      const response = await fetch(`${PROJECT_API_BASE_URL_READ}/search?${params.toString()}`, {
+      const response = await fetch(`${BASE_URL_READ}${API_PATHS.PROJECTS}/search?${params.toString()}`, {
         method: 'GET',
         headers: getAuthHeader(),
       });
@@ -1174,7 +1027,7 @@ export const projectApi = {
     }
   },
 
-  // Create Project (Port 8000)
+  // Create Project (Write)
   async createProject(data: CreateProjectRequest, images?: File[]): Promise<ProjectResponse> {
     try {
       const formData = new FormData();
@@ -1189,11 +1042,10 @@ export const projectApi = {
         });
       }
 
-      const response = await fetch(`${PROJECT_API_BASE_URL_WRITE}/create`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.PROJECTS}/create`, {
         method: 'POST',
         headers: {
           ...getAuthHeader(),
-          // Don't set Content-Type for FormData - browser will set it with boundary
         },
         body: formData,
       });
@@ -1204,38 +1056,49 @@ export const projectApi = {
     }
   },
 
-  // Update Project (Port 8000)
-  async updateProject(
-    projectId: string,
-    data: UpdateProjectRequest,
-    images?: File[]
-  ): Promise<ProjectResponse> {
-    try {
-      const formData = new FormData();
-      formData.append('request', JSON.stringify(data));
-
-      if (images) {
-        images.forEach(file => {
-          formData.append('images', file);
-        });
+  // Update Project (Write)
+// Update Project (Write) - CORRECTED VERSION
+async updateProject(
+  projectId: string,
+  formData: FormData  // Changed from (data: UpdateProjectRequest, images?: File[])
+): Promise<ProjectResponse> {
+  try {
+    console.log('API: updateProject called with projectId:', projectId);
+    console.log('API: FormData being sent:');
+    
+    // Log FormData contents for debugging
+    for (let pair of formData.entries()) {
+      if (pair[0] === 'request') {
+        try {
+          console.log(pair[0], JSON.parse(pair[1] as string));
+        } catch {
+          console.log(pair[0], pair[1]);
+        }
+      } else {
+        console.log(pair[0], pair[1]);
       }
-
-      const response = await fetch(`${PROJECT_API_BASE_URL_WRITE}/${projectId}`, {
-        method: 'PUT',
-        headers: getAuthHeader(),
-        body: formData,
-      });
-
-      return handleResponse<ProjectResponse>(response);
-    } catch (error) {
-      return handleNetworkError(error);
     }
-  },
+    
+    const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.PROJECTS}/${projectId}`, {
+      method: 'PUT',
+      headers: getAuthHeader(),  // Important: Don't set Content-Type header for FormData
+      body: formData,
+    });
 
-  // Delete Project (Port 8000)
+    const result = await handleResponse<ProjectResponse>(response);
+    console.log('API: Update response:', result);
+    return result;
+  } catch (error) {
+    console.error('API: Update project error:', error);
+    return handleNetworkError(error);
+  }
+},
+
+
+  // Delete Project (Write)
   async deleteProject(projectId: string): Promise<ProjectResponse> {
     try {
-      const response = await fetch(`${PROJECT_API_BASE_URL_WRITE}/${projectId}`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.PROJECTS}/${projectId}`, {
         method: 'DELETE',
         headers: getAuthHeader(),
       });
@@ -1254,11 +1117,8 @@ export const projectApi = {
 };
 
 /* ----------------------------------------------
-   CONTACT INQUIRY API (Port 8001 Read / 8000 Write)
+   CONTACT INQUIRY API
 ------------------------------------------------ */
-
-const API_INQUIRY_READ = "http://127.0.0.1:8001/api/contact-inquiry";
-const API_INQUIRY_WRITE = "http://127.0.0.1:8000/api/contact-inquiry";
 
 export interface Inquiry {
   id: string;
@@ -1281,7 +1141,7 @@ export interface InquiryListResponse {
 }
 
 export const inquiryApi = {
-  // Get all inquiries (READ - port 8001)
+  // Get all inquiries (Read)
   async getInquiries(
     page: number = 1,
     limit: number = 10,
@@ -1296,7 +1156,7 @@ export const inquiryApi = {
       if (status && status !== "all") params.append("status", status);
       if (startDate) params.append("start_date", startDate);
 
-      const url = `${API_INQUIRY_READ}/?${params.toString()}`;
+      const url = `${BASE_URL_READ}${API_PATHS.CONTACT_INQUIRY}/?${params.toString()}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -1309,14 +1169,14 @@ export const inquiryApi = {
     }
   },
 
-  // Update Inquiry Status (WRITE - port 8000)
+  // Update Inquiry Status (Write)
   async updateStatus(
     inquiryId: string,
     status: string
   ): Promise<ApiResponse> {
     try {
       const response = await fetch(
-        `${API_INQUIRY_WRITE}/update-status/${inquiryId}`,
+        `${BASE_URL_WRITE}${API_PATHS.CONTACT_INQUIRY}/update-status/${inquiryId}`,
         {
           method: "PUT",
           headers: {
@@ -1334,11 +1194,9 @@ export const inquiryApi = {
   },
 };
 
-
-// src/api/userApi.ts
-// src/api/userApi.ts
-
-const API_BASE = "http://127.0.0.1:8001/api/admin";
+// -------------------------------------------------------------------------------
+// User Management API
+// -------------------------------------------------------------------------------
 
 export interface UserProfileResponse {
   profiles: any[];
@@ -1357,6 +1215,7 @@ export interface UserSummary {
   kyc_pending: number;
   total_profiles: number;
 }
+
 export interface Agent {
   id: string;
   first_name: string;
@@ -1392,7 +1251,7 @@ export const userApi = {
   async getUsers(page = 1, limit = 20): Promise<UserProfileResponse> {
     try {
       const params = new URLSearchParams({ page: String(page), limit: String(limit) });
-      const url = `${API_BASE}/user_profiles/all?${params.toString()}`;
+      const url = `${BASE_URL_READ}${API_PATHS.USER_PROFILES}/all?${params.toString()}`;
 
       const response = await fetch(url, {
         method: "GET",
@@ -1423,68 +1282,73 @@ export const userApi = {
   },
 
   async getSummary(): Promise<UserSummary> {
-    const response = await fetch(`${API_BASE}/usermanagement/summary`, {
+    const response = await fetch(`${BASE_URL_READ}${API_PATHS.USERMANAGEMENT}/summary`, {
       headers: { accept: "application/json", ...getAuthHeader() },
     });
     if (!response.ok) throw new Error("Summary failed");
     return response.json();
   },
 
+  // 1. getAllAgents → Use WRITE server (8000)
   async getAllAgents(page = 1, pageSize = 10): Promise<AgentResponse> {
-    try {
-      const params = new URLSearchParams({
-        page: String(page),
-        page_size: String(pageSize)
-      });
+  try {
+    const params = new URLSearchParams({
+      page: String(page),
+      page_size: String(pageSize)
+    });
 
-      const response = await fetch(`${API_BASE}/agents/all?${params.toString()}`, {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          ...getAuthHeader(),
-        },
-      });
+    // HARDCODE THE CORRECT PATH → /api/agents/all (NOT /api/admin/agents)
+    const response = await fetch(`${BASE_URL_READ}${API_PATHS.AGENTS}/all?${params.toString()}`, {
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        ...getAuthHeader(),
+      },
+    });
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-
-      const data = await response.json();
-
-      return {
-        agents: data.agents || data || [],
-        page: data.page || page,
-        page_size: data.page_size || pageSize,
-        total: data.total || 0,
-        total_pages: data.total_pages || 1,
-      };
-    } catch (err) {
-      console.error("getAllAgents error:", err);
-      throw err;
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
     }
-  },
 
-  async getAgentDetails(agentId: string): Promise<Agent> {
-    try {
-      const response = await fetch(`${API_BASE}/agents/${agentId}`, {
-        method: "GET",
-        headers: {
-          accept: "application/json",
-          ...getAuthHeader(),
-        },
-      });
+    const data = await response.json();
 
-      if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    return {
+      agents: data.agents || [],
+      page: data.page || page,
+      page_size: data.page_size || pageSize,
+      total: data.total || 0,
+      total_pages: data.total_pages || 1,
+    };
+  } catch (err) {
+    console.error("getAllAgents error:", err);
+    throw err;
+  }
+},
 
-      const data = await response.json();
-      return data;
-    } catch (err) {
-      console.error("getAgentDetails error:", err);
-      throw err;
-    }
-  },
+  // 2. getAgentDetails → Use WRITE server (8000)
+ async getAgentDetails(agentId: string): Promise<Agent> {
+  try {
+    const response = await fetch(`${BASE_URL_READ}/api/agents/${agentId}`, {  // ← /api/agents/
+      method: "GET",
+      headers: {
+        accept: "application/json",
+        ...getAuthHeader(),
+      },
+    });
 
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return await response.json();
+  } catch (err) {
+    console.error("getAgentDetails error:", err);
+    throw err;
+  }
+},
+
+  // 3. updateAgentStatus → Also must use WRITE server (8000) — currently using READ!
   async updateAgentStatus(agentId: string, newStatus: string): Promise<void> {
     try {
-      const response = await fetch(`${API_BASE}/agents/update-status/${agentId}`, {
+      const response = await fetch(`${BASE_URL_WRITE}${API_PATHS.AGENTS}/update-status/${agentId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
@@ -1502,5 +1366,64 @@ export const userApi = {
     }
   },
 };
+
+// -----------Contact Inquiry-----------
+
+export const contactInquiryApi = {
+  // Get all inquiries with filters
+  async getAll(
+    page: number = 1,
+    limit: number = 10,
+    status?: string,
+    startDate?: string
+  ): Promise<ContactInquiryListResponse> {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+      });
+
+      if (status && status !== "all") params.append("status", status);
+      if (startDate) params.append("start_date", startDate);
+
+      const response = await fetch(
+        `${BASE_URL_READ}${API_PATHS.CONTACT_INQUIRY}/?${params.toString()}`,
+        {
+          method: "GET",
+          headers: getAuthHeader(),
+        }
+      );
+
+      return handleResponse<ContactInquiryListResponse>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+
+  // Update inquiry status
+  async updateStatus(
+    inquiryId: string,
+    status: string
+  ): Promise<ApiResponse<{ follow_up_date?: string }>> {
+    try {
+      const response = await fetch(
+        `${BASE_URL_WRITE}${API_PATHS.CONTACT_INQUIRY}/update-status/${inquiryId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeader(),
+          },
+          body: JSON.stringify({ status }),
+        }
+      );
+
+      return handleResponse<ApiResponse<{ follow_up_date?: string }>>(response);
+    } catch (error) {
+      return handleNetworkError(error);
+    }
+  },
+};
+
 
 export { ApiError };

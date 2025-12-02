@@ -48,7 +48,6 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  purchasedUnitApi,
   projectApi,
   schemeApi,
   legalAgreementsApi,
@@ -57,6 +56,7 @@ import {
   UpdateLegalAgreementRequest,
   PaymentHistoryResponse,
 } from "@/api/apiService";
+import { purchasedUnitApi } from "@/lib/utils";
 import { PurchasedUnit, Project } from "@/types/admin";
 import { UnitDetailsModal } from "@/components/Units/UnitDetailsModal";
 // import { AddUnitDialog } from "@/components/Units/AddUnitDialog";
@@ -836,7 +836,7 @@ export default function Units() {
   const [schemeMap, setSchemeMap] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(10);
+  const [pageSize] = useState(12);
   const [totalUnits, setTotalUnits] = useState(0);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryResponse | null>(null);
