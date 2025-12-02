@@ -12,6 +12,7 @@ import {
   Plus,
   AlertTriangle,
   Filter,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -64,6 +65,8 @@ export default function Projects() {
     setError(null);
     try {
       const response = await projectApi.getAllProjects(1, 100);
+      console.log('Fetched projects:', response.projects); // Add this line
+      console.log('Checking is_active values:', response.projects.map(p => ({ id: p.id, title: p.title, is_active: p.is_active })));
       setProjects(response.projects);
       setFilteredProjects(response.projects);
     } catch (err: any) {
@@ -80,6 +83,47 @@ export default function Projects() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Helper function to extract image URL from project gallery
+  const getFirstImageUrl = (project: Project): string | null => {
+    if (!project.gallery_images || !Array.isArray(project.gallery_images)) {
+      return null;
+    }
+
+    const firstImage = project.gallery_images[0];
+
+    if (!firstImage) return null;
+
+    // If it's a string URL, return it directly
+    if (typeof firstImage === 'string') {
+      return firstImage;
+    }
+
+    // If it's an object, try to extract URL from various possible structures
+    if (typeof firstImage === 'object') {
+      // Check for direct URL property
+      if (firstImage.url) {
+        // If url is a string
+        if (typeof firstImage.url === 'string') {
+          return firstImage.url;
+        }
+        // If url is an object with file_path
+        if (typeof firstImage.url === 'object' && firstImage.url.file_path) {
+          return firstImage.url.file_path;
+        }
+      }
+
+      // Check for file_path directly
+      if (firstImage.file_path) {
+        return firstImage.file_path;
+      }
+
+      // Check for other possible properties
+      return firstImage.image_url || firstImage.src || firstImage.location || null;
+    }
+
+    return null;
   };
 
   useEffect(() => {
@@ -173,6 +217,7 @@ export default function Projects() {
   };
 
   const handleProjectUpdated = () => {
+    // Force a complete refresh of projects
     fetchProjects();
     setIsEditDialogOpen(false);
     setSelectedProject(null);
@@ -181,6 +226,7 @@ export default function Projects() {
       description: "Project updated successfully",
     });
   };
+
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -220,33 +266,38 @@ export default function Projects() {
   const ProjectSkeleton = () => (
     <Card className="p-6">
       <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div className="space-y-2 flex-1">
-            <Skeleton className="h-6 w-3/4" />
-            <Skeleton className="h-4 w-1/2" />
+        {/* Image Skeleton */}
+        <Skeleton className="h-48 w-full rounded-lg" />
+
+        <div className="space-y-2">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+            <Skeleton className="h-6 w-16 rounded-full" />
           </div>
-          <Skeleton className="h-6 w-16 rounded-full" />
-        </div>
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-20" />
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+            <div className="flex justify-between">
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-20" />
+            </div>
           </div>
-          <div className="flex justify-between">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-          <div className="flex justify-between">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-20" />
-          </div>
-        </div>
-        <div className="pt-4 border-t space-y-2">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="pt-4 border-t space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-9 w-full" />
+            </div>
             <Skeleton className="h-9 w-full" />
-            <Skeleton className="h-9 w-full" />
           </div>
-          <Skeleton className="h-9 w-full" />
         </div>
       </div>
     </Card>
@@ -420,155 +471,120 @@ export default function Projects() {
       )}
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-6">
-        {filteredProjects.map((project) => (
-          <Card
-            key={project.id}
-            className="p-4 md:p-6 hover:shadow-lg transition-all duration-300 border-2 hover:border-primary/20 group"
-          >
-            <div className="space-y-4">
-              {/* Header with Title and Status */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className="font-semibold text-base md:text-lg leading-tight truncate group-hover:text-primary transition-colors"
-                    title={project.title}
-                  >
-                    {project.title}
-                  </h3>
-                  <div className="flex items-center text-sm text-muted-foreground mt-1">
-                    <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
-                    <span className="truncate" title={project.location}>
-                      {project.location}
-                    </span>
+      {/* Projects Grid - Optimized spacing & card width across all devices */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 lg:gap-6 max-w-7xl mx-auto">
+        {filteredProjects.map((project) => {
+          const imageUrl = getFirstImageUrl(project);
+
+          return (
+            <Card
+              key={project.id}
+              className="
+          p-4 hover:shadow-lg transition-all duration-300 
+          border-2 hover:border-primary/20 group overflow-hidden
+          flex flex-col
+        "
+            >
+              <div className="space-y-3 flex-1">
+                {/* Image - shorter on mobile, normal on larger screens */}
+                <div className="relative h-40 sm:h-44 md:h-48 w-full rounded-lg overflow-hidden bg-gray-100">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={project.title}
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        e.currentTarget.src = '';
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gray-100 text-gray-400">
+                      <ImageIcon className="w-10 h-10 mb-2" />
+                      <span className="text-xs">No Image</span>
+                    </div>
+                  )}
+
+                  {project.gallery_images && project.gallery_images.length > 0 && (
+                    <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                      {project.gallery_images.length} image{project.gallery_images.length !== 1 ? 's' : ''}
+                    </div>
+                  )}
+                </div>
+
+                {/* Title + Location + Status */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-base leading-tight truncate group-hover:text-primary transition-colors" title={project.title}>
+                      {project.title}
+                    </h3>
+                    <div className="flex items-center text-xs text-muted-foreground mt-0.5">
+                      <MapPin className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
+                      <span className="truncate" title={project.location}>{project.location}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <Badge className={`text-xs px-2 py-0.5 ${getStatusColor(project.status)}`}>
+                      {project.status.replace("_", " ").toUpperCase()}
+                    </Badge>
+                    <Badge variant="outline" className={`text-xs px-2 py-0.5 ${project.is_active ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
+                      }`}>
+                      {project.is_active ? 'ACTIVE' : 'INACTIVE'}
+                    </Badge>
                   </div>
                 </div>
-                <Badge
-                  className={`ml-2 flex-shrink-0 text-xs px-2 py-1 ${getStatusColor(
-                    project.status
-                  )}`}
-                >
-                  {project.status.replace("_", " ").toUpperCase()}
-                </Badge>
-              </div>
 
-              {/* Project Details */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center">
-                    <Building className="w-4 h-4 mr-1" />
-                    Type:
-                  </span>
-                  <span className="font-medium capitalize">
-                    {project.property_type.replace("_", " ")}
-                  </span>
+                {/* Key Details - Compact */}
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Type:</span>
+                    <span className="font-medium capitalize">{project.property_type.replace("_", " ")}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Price:</span>
+                    <span className="font-semibold">{formatPrice(project.base_price)}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Units:</span>
+                    <span>{project.available_units}/{project.total_units}</span> 
+                  </div>
+
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Base Price:</span>
-                  <div className="flex items-center font-semibold">
-                    {/* <IndianRupee className="w-4 h-4 mr-1" /> */}
-                    {formatPrice(project.base_price)}
+                {/* Progress Bar */}
+                <div className="pt-2">
+                  <div className="w-full bg-muted rounded-full h-1.5">
+                    <div
+                      className="bg-primary h-1.5 rounded-full transition-all duration-300"
+                      style={{ width: `${(project.sold_sqft / project.total_sqft) * 100}%` }} 
+
+                    />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Sqft:</span>
-                  <span className="font-medium">
-                    {project.available_units} / {project.total_units} available
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Floor:</span>
-                  <span className="font-medium">{project.floor_number}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Project Code:</span>
-                  <span className="font-medium text-xs bg-gray-100 px-2 py-1 rounded">
-                    {project.project_code}
-                  </span>
-                </div>
-
-                {project.rera_number && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">RERA:</span>
-                    <span
-                      className="font-medium text-xs truncate max-w-[120px] bg-blue-50 px-2 py-1 rounded"
-                      title={project.rera_number}
-                    >
-                      {project.rera_number}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Created:</span>
-                  <span>{formatDate(project.created_at)}</span>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="pt-2">
-                <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                  <span>Progress</span>
-                  <span>
-                    {Math.round(
-                      (project.sold_units / project.total_units) * 100
-                    )}
-                    % sold
-                  </span>
-                </div>
-                <div className="w-full bg-muted rounded-full h-2">
-                  <div
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${(project.sold_units / project.total_units) * 100
-                        }%`,
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="pt-4 border-t space-y-2">
-                <div className="grid grid-cols-2 gap-2">
+                {/* Action Buttons */}
+                <div className="pt-3 border-t flex gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleViewProject(project)}
-                    className="flex items-center justify-center"
+                    className="flex-1 text-xs"
                   >
-                    <Eye className="w-4 h-4 mr-1" />
-                    View
+                    <Eye className="w-3.5 h-3.5 mr-1" /> View
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleEditProject(project)}
-                    className="flex items-center justify-center"
+                    className="flex-1 text-xs"
                   >
-                    <Edit className="w-4 h-4 mr-1" />
-                    Edit
+                    <Edit className="w-3.5 h-3.5 mr-1" /> Edit
                   </Button>
                 </div>
-                {/* <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => handleDeleteClick(project.id)}
-                  disabled={isDeleting}
-                >
-                  <Trash className="w-4 h-4 mr-1" />
-                  {isDeleting && projectToDelete === project.id
-                    ? "Deleting..."
-                    : "Delete"}
-                </Button> */}
               </div>
-            </div>
-          </Card>
-        ))}
+            </Card>
+          );
+        })}
       </div>
 
       {filteredProjects.length === 0 && !isLoading && (

@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Project } from "@/types/admin";
 import { projectApi } from "@/api/apiService";
 import { useToast } from "@/hooks/use-toast";
-import { X, Upload, Image as ImageIcon, AlertCircle } from "lucide-react";
+import { X, Upload, AlertCircle, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -50,8 +50,71 @@ interface ProjectFormData {
   floor_number: number;
   project_code: string;
   building_permission: string;
-  is_active: boolean,
+  is_active: boolean;
+  gst_percentage?: number;
+  gst_type?: "inclusive" | "exclusive";
 }
+
+// Helper function to extract image URL
+const extractImageUrl = (image: any): string => {
+  if (!image) return "";
+  
+  if (typeof image === 'string') {
+    return image;
+  }
+  
+  if (typeof image === 'object') {
+    if (image.url) {
+      if (typeof image.url === 'string') {
+        return image.url;
+      }
+      if (typeof image.url === 'object' && image.url.file_path) {
+        return image.url.file_path;
+      }
+    }
+    
+    if (image.file_path) {
+      return image.file_path;
+    }
+    
+    return image.image_url || image.src || image.location || "";
+  }
+  
+  return "";
+};
+
+// Helper to extract filename from URL
+const getFilenameFromUrl = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    return urlObj.pathname.split('/').pop() || `image_${Date.now()}`;
+  } catch {
+    return `image_${Date.now()}`;
+  }
+};
+
+// Helper function to format file size
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
+
+// Helper to get file icon
+const getFileIcon = (fileType: string) => {
+  if (fileType.includes('image/')) {
+    return '🖼️';
+  } else if (fileType.includes('pdf')) {
+    return '📄';
+  } else if (fileType.includes('word') || fileType.includes('document')) {
+    return '📝';
+  } else if (fileType.includes('excel') || fileType.includes('spreadsheet')) {
+    return '📊';
+  }
+  return '📎';
+};
 
 export function EditProjectDialog({
   project,
@@ -78,84 +141,274 @@ export function EditProjectDialog({
     project_code: "",
     building_permission: "",
     is_active: true,
+    gst_percentage: 18,
+    gst_type: "inclusive",
   });
-
+console.log("formadata",formData)
   const [existingImages, setExistingImages] = useState<
-    Array<{ url: string; filename: string }>
+    Array<{ url: string; filename: string; originalData: any; id?: string }>
+  >([]);
+  const [existingBrochures, setExistingBrochures] = useState<
+    Array<{ url: string; filename: string; type: string; id?: string }>
   >([]);
   const [newImages, setNewImages] = useState<File[]>([]);
+  const [newBrochures, setNewBrochures] = useState<File[]>([]);
   const [imagesToDelete, setImagesToDelete] = useState<string[]>([]);
+  const [brochuresToDelete, setBrochuresToDelete] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (project) {
-      setFormData({
-        title: project.title || "",
-        location: project.location || "",
-        description: project.description || "",
-        long_description: project.long_description || "",
-        status: project.status || "available",
-        base_price: project.base_price || 0,
-        property_type: project.property_type || "commercial",
-        total_units: project.total_units || 0,
-        available_units: project.available_units || 0,
-        sold_units: project.sold_units || 0,
-        reserved_units: project.reserved_units || 0,
-        rera_number: project.rera_number || "",
-        has_rental_income: project.has_rental_income || false,
-        website_url: project.website_url || "",
-        floor_number: project.floor_number || 1,
-        project_code: project.project_code || "",
-        building_permission: project.building_permission || "",
-        is_active: project.is_active ?? true,
-      });
+  // Process project data whenever project changes or dialog opens
+useEffect(() => {
+  if (project && isOpen) {
+    console.log("=== EDITING PROJECT ===");
+    console.log("Project ID:", project.id);
+    console.log("Project is_active from API:", project.is_active);
+    console.log("Raw gallery_images:", project.gallery_images);
+    console.log("Raw brochure:", project.brochure);
 
-      // Set existing images
-      setExistingImages(project.gallery_images || []);
-    }
-  }, [project]);
+    // Reset form data - USE BACKEND FIELD NAMES
+    setFormData({
+      title: project.title || "",
+      location: project.location || "",
+      description: project.description || "",
+      long_description: project.long_description || "",
+      status: project.status || "available",
+      base_price: project.base_price || 0,
+      property_type: project.property_type || "commercial",
+      total_units: project.total_units || 0, // CHANGED: total_sqft -> total_units
+      available_units: project.available_units || 0, // CHANGED: available_sqft -> available_units
+      sold_units: project.sold_units || 0, // CHANGED: sold_sqft -> sold_units
+      reserved_units: project.reserved_sqft || 0, // CHANGED: reserved_sqft -> reserved_units
+      rera_number: project.rera_number || "",
+      has_rental_income: project.has_rental_income || false,
+      website_url: project.website_url || "",
+      floor_number: project.floor_number || 1,
+      project_code: project.project_code || "",
+      building_permission: project.building_permission || "",
+      is_active: project.is_active ?? true, // THIS SHOULD COME FROM BACKEND
+      gst_percentage: project.gst_percentage || 18,
+      gst_type: project.gst_type || "inclusive",
+    });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+    console.log("Form data set - is_active:", project.is_active ?? true);
+      // Process gallery images
+      const processedImages: Array<{ url: string; filename: string; id: string }> = [];
 
-    try {
-      // Prepare the update data
-      const updateData = {
-        ...formData,
-        gallery_images: [
-          ...existingImages.filter((img) => !imagesToDelete.includes(img.url)),
-          ...newImages.map((file) => ({
-            url: URL.createObjectURL(file), // This will be replaced with actual URLs after upload
-            filename: file.name,
-        })),
-        ],
-      };
+      if (project.gallery_images && Array.isArray(project.gallery_images)) {
+        project.gallery_images.forEach((img: any, index: number) => {
+          const imageUrl = extractImageUrl(img);
+          if (imageUrl && imageUrl.trim() !== '') {
+            processedImages.push({
+              url: imageUrl,
+              filename: getFilenameFromUrl(imageUrl),
+              id: imageUrl
+            });
+          }
+        });
+      }
+
+      console.log("Processed images:", processedImages.length, processedImages);
       
+      // Process brochures
+      const processedBrochures: Array<{ url: string; filename: string; type: string; id: string }> = [];
+      
+      if (project.brochure && Array.isArray(project.brochure)) {
+        project.brochure.forEach((brochure: any, index: number) => {
+          const brochureUrl = extractImageUrl(brochure);
+          if (brochureUrl && brochureUrl.trim() !== '') {
+            processedBrochures.push({
+              url: brochureUrl,
+              filename: brochure.filename || getFilenameFromUrl(brochureUrl),
+              type: brochure.type || "application/pdf",
+              id: brochureUrl
+            });
+          }
+        });
+      }
+      
+      console.log("Processed brochures:", processedBrochures.length, processedBrochures);
 
-
-      await projectApi.updateProject(project.id, updateData, newImages);
-
-      toast({
-        title: "✅ Project Updated",
-        description: "Project has been successfully updated.",
-        className: "bg-green-50 border-green-200 text-green-800",
-      });
-
-      onSuccess();
-    } catch (error: any) {
-      console.error("Error updating project:", error);
-      toast({
-        title: "❌ Update Failed",
-        description:
-          error.detail || "Failed to update project. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+      // CRITICAL: Reset all image-related states
+      setExistingImages(processedImages);
+      setExistingBrochures(processedBrochures);
+      setImagesToDelete([]);
+      setBrochuresToDelete([]);
+      setNewImages([]);
+      setNewBrochures([]);
     }
-  };
+  }, [project, isOpen]);
+
+  // Additional useEffect to handle dialog close
+  useEffect(() => {
+    if (!isOpen) {
+      // Reset all states when dialog closes
+      setNewImages([]);
+      setNewBrochures([]);
+      setImagesToDelete([]);
+      setBrochuresToDelete([]);
+      setExistingImages([]);
+      setExistingBrochures([]);
+    }
+  }, [isOpen]);
+
+
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsLoading(true);
+
+  try {
+    // Prepare the form data
+    const formDataToSend = new FormData();
+    
+    // 1. Prepare the project JSON data - Use correct field names matching backend
+    const projectUpdateData: any = {
+      title: formData.title,
+      location: formData.location,
+      description: formData.description,
+      long_description: formData.long_description,
+      status: formData.status,
+      base_price: formData.base_price,
+      property_type: formData.property_type,
+      // Unit fields - ensure they're valid numbers
+      total_sqft: formData.total_units > 0 ? formData.total_units : undefined,
+      available_sqft: formData.available_units >= 0 ? formData.available_units : undefined,
+      sold_sqft: formData.sold_units >= 0 ? formData.sold_units : undefined,
+      reserved_sqft: formData.reserved_units >= 0 ? formData.reserved_units : undefined,
+      rera_number: formData.rera_number,
+      has_rental_income: formData.has_rental_income,
+      website_url: formData.website_url,
+      floor_number: formData.floor_number,
+      project_code: formData.project_code,
+      building_permission: formData.building_permission,
+      is_active: formData.is_active,
+      gst_percentage: formData.gst_percentage,
+      gst_type: formData.gst_type,
+      // Send URLs to delete
+      images_to_remove: imagesToDelete,
+      brochures_to_remove: brochuresToDelete,
+    };
+
+    // ALWAYS send gallery_images and brochure — even if empty arrays
+const filteredGalleryImages = existingImages
+  .filter(img => !imagesToDelete.includes(img.url))
+  .map(img => ({
+    url: { file_path: img.url },
+    filename: img.filename
+  }));
+
+const filteredBrochures = existingBrochures
+  .filter(brochure => !brochuresToDelete.includes(brochure.url))
+  .map(brochure => ({
+    url: { file_path: brochure.url },
+    filename: brochure.filename,
+    type: brochure.type || "application/pdf"
+  }));
+
+// CRITICAL: Always include these fields (can be empty arrays)
+projectUpdateData.gallery_images = filteredGalleryImages;
+projectUpdateData.brochure = filteredBrochures;
+    // Remove undefined/null values
+    const cleanedProjectUpdateData = Object.fromEntries(
+      Object.entries(projectUpdateData).filter(([_, v]) => v !== undefined && v !== null)
+    );
+    
+    console.log('=== UPDATE SUBMISSION ===');
+    console.log('Project ID:', project.id);
+    console.log('Original formData:', formData);
+    console.log('Cleaned projectUpdateData:', cleanedProjectUpdateData);
+    console.log('total_sqft value:', cleanedProjectUpdateData.total_sqft);
+    
+    // 2. Append the project data as JSON string with field name "request"
+    formDataToSend.append('request', JSON.stringify(cleanedProjectUpdateData));
+    
+    // 3. Debug: Log what's in FormData
+    console.log('FormData entries:');
+    for (let pair of formDataToSend.entries()) {
+      if (pair[0] === 'request') {
+        try {
+          console.log(pair[0], JSON.parse(pair[1] as string));
+        } catch (e) {
+          console.log(pair[0], pair[1]);
+        }
+      } else {
+        console.log(pair[0], pair[1]);
+      }
+    }
+    
+    // 4. Append new images
+    console.log('New images to upload:', newImages.length);
+    newImages.forEach((file, index) => {
+      console.log(`Image ${index}:`, file.name, file.size, file.type);
+      formDataToSend.append('images', file);
+    });
+
+    // 5. Append new brochures
+    console.log('New brochures to upload:', newBrochures.length);
+    newBrochures.forEach((file, index) => {
+      console.log(`Brochure ${index}:`, file.name, file.size, file.type);
+      formDataToSend.append('brochures', file);
+    });
+
+    // 6. Call API with FormData
+    console.log('Calling updateProject API...');
+    const response = await projectApi.updateProject(project.id, formDataToSend);
+    
+    console.log('Update response:', response);
+    console.log('Response message:', response.message);
+    
+    if (response.data) {
+      console.log('Updated project data:', response.data);
+      console.log('Updated is_active:', response.data.is_active);
+      console.log('Updated total_sqft:', response.data.total_sqft);
+    }
+
+    toast({
+      title: "✅ Project Updated",
+      description: "Project has been successfully updated.",
+      className: "bg-green-50 border-green-200 text-green-800",
+    });
+
+    // IMPORTANT: Reset all states before closing
+    setNewImages([]);
+    setNewBrochures([]);
+    setImagesToDelete([]);
+    setBrochuresToDelete([]);
+    setExistingImages([]);
+    setExistingBrochures([]);
+    
+    // Close dialog and trigger parent refresh
+    onSuccess();
+    
+  } catch (error: any) {
+    console.error("Error updating project:", error);
+    
+    if (error.response) {
+      console.error('Response error data:', error.response.data);
+      console.error('Response status:', error.response.status);
+    }
+    
+    let errorMessage = "Failed to update project. Please try again.";
+    
+    if (error.detail) {
+      errorMessage = error.detail;
+    } else if (error.message) {
+      errorMessage = error.message;
+    } else if (error.response?.data?.detail) {
+      errorMessage = error.response.data.detail;
+    } else if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    }
+    
+    toast({
+      title: "❌ Update Failed",
+      description: errorMessage,
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleChange = (field: string, value: any) => {
     setFormData((prev) => ({
@@ -169,18 +422,65 @@ export function EditProjectDialog({
     if (files) {
       setNewImages((prev) => [...prev, ...Array.from(files)]);
     }
+    event.target.value = '';
+  };
+
+  const handleNewBrochureSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+      setNewBrochures((prev) => [...prev, ...Array.from(files)]);
+    }
+    event.target.value = '';
   };
 
   const removeNewImage = (index: number) => {
     setNewImages((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const removeNewBrochure = (index: number) => {
+    setNewBrochures((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const markImageForDeletion = (imageUrl: string) => {
-    setImagesToDelete((prev) => [...prev, imageUrl]);
+    console.log('Marking image for deletion:', imageUrl);
+    setImagesToDelete((prev) => {
+      if (!prev.includes(imageUrl)) {
+        const newList = [...prev, imageUrl];
+        console.log('New image deletion list:', newList);
+        return newList;
+      }
+      return prev;
+    });
+  };
+
+  const markBrochureForDeletion = (brochureUrl: string) => {
+    console.log('Marking brochure for deletion:', brochureUrl);
+    setBrochuresToDelete((prev) => {
+      if (!prev.includes(brochureUrl)) {
+        const newList = [...prev, brochureUrl];
+        console.log('New brochure deletion list:', newList);
+        return newList;
+      }
+      return prev;
+    });
   };
 
   const restoreImage = (imageUrl: string) => {
-    setImagesToDelete((prev) => prev.filter((url) => url !== imageUrl));
+    console.log('Restoring image:', imageUrl);
+    setImagesToDelete((prev) => {
+      const newList = prev.filter((url) => url !== imageUrl);
+      console.log('Updated image deletion list:', newList);
+      return newList;
+    });
+  };
+
+  const restoreBrochure = (brochureUrl: string) => {
+    console.log('Restoring brochure:', brochureUrl);
+    setBrochuresToDelete((prev) => {
+      const newList = prev.filter((url) => url !== brochureUrl);
+      console.log('Updated brochure deletion list:', newList);
+      return newList;
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -209,8 +509,45 @@ export function EditProjectDialog({
     }
   };
 
+  // Filter existing images to show only those not marked for deletion
+  const visibleExistingImages = existingImages.filter(img => 
+    !imagesToDelete.includes(img.url)
+  );
+
+  const visibleExistingBrochures = existingBrochures.filter(brochure =>
+    !brochuresToDelete.includes(brochure.url)
+  );
+
+  // Handle image loading error
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+    const target = e.currentTarget;
+    target.src = '';
+    
+    const parent = target.parentElement;
+    if (parent) {
+      parent.classList.add('bg-gray-100');
+      parent.innerHTML = `
+        <div class="flex flex-col items-center justify-center h-full">
+          <svg class="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <span class="text-xs text-gray-500">Image not found</span>
+        </div>
+      `;
+    }
+  };
+
+  // Handle dialog close
+  const handleClose = () => {
+    setNewImages([]);
+    setNewBrochures([]);
+    setImagesToDelete([]);
+    setBrochuresToDelete([]);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Edit Project</DialogTitle>
@@ -267,10 +604,47 @@ export function EditProjectDialog({
                   type="number"
                   value={formData.floor_number}
                   onChange={(e) =>
-                    handleChange("floor_number", parseInt(e.target.value))
+                    handleChange("floor_number", parseInt(e.target.value) || 1)
                   }
+                  min="1"
                   required
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="gst_percentage">GST Percentage</Label>
+                <Input
+                  id="gst_percentage"
+                  type="number"
+                  step="0.01"
+                  value={formData.gst_percentage || ""}
+                  onChange={(e) =>
+                    handleChange("gst_percentage", parseFloat(e.target.value) || 0)
+                  }
+                  min="0"
+                  max="100"
+                  placeholder="18"
+                />
+                <p className="text-xs text-gray-500">GST percentage for this project</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label>GST Type</Label>
+                <Select
+                  value={formData.gst_type || "inclusive"}
+                  onValueChange={(value) => handleChange("gst_type", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select GST type" />
+                  </SelectTrigger>
+                  <SelectContent className="z-50 bg-white shadow-lg">
+                    <SelectItem value="include">Inclusive</SelectItem>
+                    <SelectItem value="exclude">Exclusive</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500">Whether GST is inclusive or exclusive of price</p>
               </div>
             </div>
 
@@ -357,9 +731,10 @@ export function EditProjectDialog({
                   type="number"
                   value={formData.base_price}
                   onChange={(e) =>
-                    handleChange("base_price", parseFloat(e.target.value))
+                    handleChange("base_price", parseFloat(e.target.value) || 0)
                   }
                   required
+                  min="0"
                 />
               </div>
 
@@ -373,6 +748,7 @@ export function EditProjectDialog({
                     handleChange("total_units", parseInt(e.target.value))
                   }
                   required
+                  min="0"
                 />
               </div>
 
@@ -386,6 +762,7 @@ export function EditProjectDialog({
                     handleChange("available_units", parseInt(e.target.value))
                   }
                   required
+                  min="0"
                 />
               </div>
             </div>
@@ -459,67 +836,68 @@ export function EditProjectDialog({
               Project Images
             </h3>
 
+            {/* Images marked for deletion */}
+            {imagesToDelete.length > 0 && (
+              <Alert className="bg-amber-50 border-amber-200 text-amber-800 mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {imagesToDelete.length} image{imagesToDelete.length !== 1 ? 's' : ''} marked for deletion.
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="ml-2 h-auto p-0 text-amber-800 hover:text-amber-900"
+                    onClick={() => setImagesToDelete([])}
+                  >
+                    Restore all
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* Existing Images */}
-            {existingImages.length > 0 && (
+            {visibleExistingImages.length > 0 ? (
               <div className="space-y-3">
-                <Label>Existing Images</Label>
+                <Label>Existing Images ({visibleExistingImages.length})</Label>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {existingImages.map((image, index) => {
-                    const isMarkedForDeletion = imagesToDelete.includes(
-                      image.url
-                    );
-                    return (
-                      <div
-                        key={index}
-                        className={`relative group rounded-lg p-2 border-2 ${isMarkedForDeletion
-                          ? "border-red-300 bg-red-50 hidden"
-                          : "border-gray-200 bg-gray-50"
-                          }`}
-                      >
-                        <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
-                          <img
-                            src={image.url}
-                            alt={`Project image ${index + 1}`}
-                            className={`object-cover rounded-md w-full h-full ${isMarkedForDeletion ? "hidden" : ""
-                              }`}
-                          />
-                        </div>
-                        <div className="mt-2">
-                          <p className="text-xs font-medium text-gray-700 truncate">
-                            {image.filename || `Image ${index + 1}`}
-                          </p>
-                        </div>
-                        <Button
-                          type="button"
-                          variant={
-                            isMarkedForDeletion ? "default" : "destructive"
-                          }
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                          onClick={() =>
-                            isMarkedForDeletion
-                              ? restoreImage(image.url)
-                              : markImageForDeletion(image.url)
-                          }
-                        >
-                          {isMarkedForDeletion ? (
-                            <span className="text-xs">↶</span>
-                          ) : (
-                            <X className="h-3 w-3" />
-                          )}
-                        </Button>
-                        {/* {isMarkedForDeletion && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <Badge variant="destructive" className="text-xs">
-                              To be deleted
-                            </Badge>
-                          </div>
-                        )} */}
+                  {visibleExistingImages.map((image, index) => (
+                    <div
+                      key={image.id || index}
+                      className="relative group rounded-lg p-2 border border-gray-200 bg-gray-50"
+                    >
+                      <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center overflow-hidden">
+                        <img
+                          src={image.url}
+                          alt={`Project image ${index + 1}`}
+                          className="object-cover w-full h-full"
+                          onError={handleImageError}
+                        />
                       </div>
-                    );
-                  })}
+                      <div className="mt-2">
+                        {/* <p className="text-xs font-medium text-gray-700 truncate">
+                          {image.filename}
+                        </p> */}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => markImageForDeletion(image.url)}
+                        title="Delete this image"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
                 </div>
               </div>
+            ) : (
+              <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No images available for this project.
+                </AlertDescription>
+              </Alert>
             )}
 
             {/* Add New Images */}
@@ -558,7 +936,7 @@ export function EditProjectDialog({
                       key={index}
                       className="relative group bg-gray-100 rounded-lg p-2 border"
                     >
-                      <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center">
+                      <div className="aspect-square bg-gray-200 rounded-md flex items-center justify-center overflow-hidden">
                         <img
                           src={URL.createObjectURL(file)}
                           alt={`New image ${index + 1}`}
@@ -570,7 +948,7 @@ export function EditProjectDialog({
                           {file.name}
                         </p>
                         <p className="text-xs text-gray-500">
-                          {(file.size / (1024 * 1024)).toFixed(2)} MB
+                          {formatFileSize(file.size)}
                         </p>
                       </div>
                       <Button
@@ -579,6 +957,7 @@ export function EditProjectDialog({
                         size="icon"
                         className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => removeNewImage(index)}
+                        title="Remove this image"
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -589,6 +968,163 @@ export function EditProjectDialog({
             </div>
           </div>
 
+          {/* Brochures Management */}
+          <div className="space-y-4 p-4 border rounded-lg bg-white">
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <div className="w-2 h-2 bg-indigo-600 rounded-full"></div>
+              Project Brochures
+            </h3>
+
+            {/* Brochures marked for deletion */}
+            {brochuresToDelete.length > 0 && (
+              <Alert className="bg-amber-50 border-amber-200 text-amber-800 mb-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  {brochuresToDelete.length} brochure{brochuresToDelete.length !== 1 ? 's' : ''} marked for deletion.
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="ml-2 h-auto p-0 text-amber-800 hover:text-amber-900"
+                    onClick={() => setBrochuresToDelete([])}
+                  >
+                    Restore all
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Existing Brochures */}
+            {visibleExistingBrochures.length > 0 ? (
+              <div className="space-y-3">
+                <Label>Existing Brochures ({visibleExistingBrochures.length})</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {visibleExistingBrochures.map((brochure, index) => (
+                    <div
+                      key={brochure.id || index}
+                      className="relative group rounded-lg p-3 border border-gray-200 bg-gray-50"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-2xl">
+                          {getFileIcon(brochure.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-700 truncate">
+                            {brochure.filename}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {brochure.type.split('/').pop()?.toUpperCase()}
+                          </p>
+                          <a
+                            href={brochure.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-600 hover:text-blue-800 hover:underline mt-1 inline-block"
+                          >
+                            View Brochure
+                          </a>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => markBrochureForDeletion(brochure.url)}
+                        title="Delete this brochure"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  No brochures available for this project.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Add New Brochures */}
+            <div className="space-y-3">
+              <Label>Add New Brochures</Label>
+              <div className="flex items-center justify-center w-full">
+                <label
+                  htmlFor="new-brochures"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <FileText className="w-8 h-8 mb-3 text-gray-400" />
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold">Click to upload brochures</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      PDF, JPG, PNG, DOC, DOCX, XLS, XLSX (Max 20MB each)
+                    </p>
+                  </div>
+                  <Input
+                    id="new-brochures"
+                    type="file"
+                    multiple
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                    onChange={handleNewBrochureSelect}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {newBrochures.length > 0 && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {newBrochures.map((file, index) => (
+                      <div
+                        key={index}
+                        className="relative group bg-gray-100 rounded-lg p-3 border"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="text-2xl">
+                            {getFileIcon(file.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-700 truncate">
+                              {file.name}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {formatFileSize(file.size)}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              Type: {file.type.split('/').pop()?.toUpperCase()}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => removeNewBrochure(index)}
+                          title="Remove this brochure"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {newBrochures.length > 0 && (
+                    <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-sm">
+                        {newBrochures.length} brochure{newBrochures.length !== 1 ? 's' : ''} selected for upload.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Active / Inactive Toggle */}
           <div className="p-4 border rounded-lg bg-white">
@@ -608,13 +1144,12 @@ export function EditProjectDialog({
             </div>
           </div>
 
-
           {/* Action Buttons */}
           <div className="flex justify-end space-x-3 pt-4 border-t">
             <Button
               type="button"
               variant="outline"
-              onClick={onClose}
+              onClick={handleClose}
               disabled={isLoading}
             >
               Cancel
@@ -639,5 +1174,3 @@ export function EditProjectDialog({
     </Dialog>
   );
 }
-
-
